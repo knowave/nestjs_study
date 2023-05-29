@@ -14,8 +14,6 @@ import { join } from 'path';
         path: join(process.cwd(), 'src/graphql.ts'),
         outputAs: 'class',
       },
-      // autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
-      // sortSchema: true,
     }),
   ],
   controllers: [AppController],
