@@ -1,0 +1,3 @@
+interface createCatDto {
+  name: string;
+}
