@@ -51,16 +51,18 @@ export class CatsService {
    * @param catsId
    * @returns
    */
-  async update(catsId: number) {
+  async update(catsId: number, cats: Cats): Promise<Cats> {
     const cat = await this.findOneById(catsId);
 
-    return await this.catsRepository.update(catsId, { name: cat.name });
+    cat.name = cats.name;
+
+    return await this.catsRepository.save(cat);
   }
 
   /**
    * 고양이 삭제
-   * @param catsId 
-   * @returns 
+   * @param catsId
+   * @returns
    */
   async delete(catsId: number): Promise<void> {
     const cat = await this.findOneById(catsId);
