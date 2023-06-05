@@ -62,9 +62,9 @@ export class CatsService {
    * @param catsId 
    * @returns 
    */
-  async delete(catsId: number) {
+  async delete(catsId: number): Promise<void> {
     const cat = await this.findOneById(catsId);
 
-    return await this.catsRepository.delete(cat.catsId);
+    await this.catsRepository.delete(cat.catsId);
   }
 }
