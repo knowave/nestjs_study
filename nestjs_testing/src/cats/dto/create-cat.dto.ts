@@ -1,3 +1,3 @@
-interface createCatDto {
+export class CreateCatDto {
   name: string;
 }
