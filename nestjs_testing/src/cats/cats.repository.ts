@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource, Repository } from 'typeorm';
 import { Cats } from './entities/cats.entity';
+import { CreateCatDto } from './dto/create-cat.dto';
 
 @Injectable()
 export class CatsRepository extends Repository<Cats> {
@@ -13,7 +14,7 @@ export class CatsRepository extends Repository<Cats> {
    * @param createCatDto
    * @returns
    */
-  async createCat(createCatDto: createCatDto): Promise<Cats> {
+  async createCat(createCatDto: CreateCatDto): Promise<Cats> {
     const { name } = createCatDto;
     const createCat = await this.create({ name });
 
