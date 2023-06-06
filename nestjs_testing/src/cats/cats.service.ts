@@ -1,10 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CatsRepository } from './cats.repository';
 import { InjectRepository } from '@nestjs/typeorm';
-import { MyPaginationQuery } from 'src/base/pagination-query';
+import { MyPaginationQuery } from '../base/pagination-query';
 import { Pagination, paginate } from 'nestjs-typeorm-paginate';
 import { Cats } from './entities/cats.entity';
-import { CATS_EXCEPTION } from 'src/exceptions/error-code';
+import { CATS_EXCEPTION } from '../exceptions/error-code';
 import { CreateCatDto } from './dto/create-cat.dto';
 
 @Injectable()
