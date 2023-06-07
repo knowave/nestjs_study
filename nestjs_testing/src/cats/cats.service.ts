@@ -56,7 +56,7 @@ export class CatsService {
 
     cat.name = cats.name;
 
-    return await this.catsRepository.saveCat(cat);
+    return await this.catsRepository.updaetCat(cat);
   }
 
   /**
