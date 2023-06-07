@@ -67,6 +67,6 @@ export class CatsService {
   async delete(catsId: number): Promise<void> {
     const cat = await this.findOneById(catsId);
 
-    await this.catsRepository.delete(cat.catsId);
+    await this.catsRepository.deleteCat(cat.catsId);
   }
 }

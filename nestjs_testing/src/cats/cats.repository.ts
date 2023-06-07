@@ -40,4 +40,8 @@ export class CatsRepository extends Repository<Cats> {
   async updateCat(cats: Cats): Promise<Cats> {
     return await this.save(cats);
   }
+
+  async deleteCat(catId: number): Promise<void> {
+    await this.delete(catId);
+  }
 }
