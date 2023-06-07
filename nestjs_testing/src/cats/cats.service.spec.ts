@@ -5,6 +5,7 @@ import { Cats } from './entities/cats.entity';
 import { CatsRepository } from './cats.repository';
 import { Repository } from 'typeorm';
 import { CreateCatDto } from './dto/create-cat.dto';
+import { NotFoundException } from '@nestjs/common';
 
 const mockRepository = {
   findAndCount: jest.fn(),
@@ -81,7 +82,18 @@ describe('CatsService', () => {
 
       const result = await service.findOneById(catId);
 
-      console.log('result', result);
+      expect(result).toEqual(cat);
+      expect(repository.findOneById).toHaveBeenCalledWith(catId);
+    });
+
+    it('should throw NotFoundException if cat is not found', async () => {
+      const catId = 1;
+
+      jest.spyOn(repository, 'findOneById').mockResolvedValue(undefined);
+
+      await expect(service.findOneById(catId)).rejects.toThrowError(
+        NotFoundException,
+      );
     });
   });
 
