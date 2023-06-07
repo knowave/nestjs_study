@@ -41,6 +41,10 @@ export class CatsRepository extends Repository<Cats> {
     return await this.save(cats);
   }
 
+  /**
+   * 고양이 삭제
+   * @param catId 
+   */
   async deleteCat(catId: number): Promise<void> {
     await this.delete(catId);
   }
