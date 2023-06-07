@@ -37,7 +37,7 @@ export class CatsRepository extends Repository<Cats> {
    * @param cats
    * @returns
    */
-  async updaetCat(cats: Cats): Promise<Cats> {
+  async updateCat(cats: Cats): Promise<Cats> {
     return await this.save(cats);
   }
 }
