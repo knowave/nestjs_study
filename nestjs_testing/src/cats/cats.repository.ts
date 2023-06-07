@@ -43,9 +43,9 @@ export class CatsRepository extends Repository<Cats> {
 
   /**
    * 고양이 삭제
-   * @param catId 
+   * @param catsId 
    */
-  async deleteCat(catId: number): Promise<void> {
-    await this.delete(catId);
+  async deleteCat(catsId: number): Promise<void> {
+    await this.delete(catsId);
   }
 }
