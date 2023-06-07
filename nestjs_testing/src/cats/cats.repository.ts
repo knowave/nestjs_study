@@ -23,12 +23,21 @@ export class CatsRepository extends Repository<Cats> {
 
   /**
    * 특정 고양이 조회
-   * @param catsId 
-   * @returns 
+   * @param catsId
+   * @returns
    */
   async findOneById(catsId: number): Promise<Cats> {
     const cat = await this.findOne({ where: { catsId } });
 
     return cat;
+  }
+
+  /**
+   * 수정 시 사용할 method
+   * @param cats
+   * @returns
+   */
+  async saveCat(cats: Cats): Promise<Cats> {
+    return await this.save(cats);
   }
 }
