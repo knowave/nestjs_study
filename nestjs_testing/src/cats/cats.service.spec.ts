@@ -1,22 +1,19 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CatsService } from './cats.service';
-import { getRepositoryToken } from '@nestjs/typeorm';
 import { Cats } from './entities/cats.entity';
 import { CatsRepository } from './cats.repository';
-import { Repository } from 'typeorm';
 import { CreateCatDto } from './dto/create-cat.dto';
 import { NotFoundException } from '@nestjs/common';
 
 const mockRepository = {
-  findAndCount: jest.fn(),
+  deleteCat: jest.fn(),
+  updateCat: jest.fn(),
   findAllByCats: jest.fn(),
   findOneById: jest.fn(),
   createCat: jest.fn(),
   update: jest.fn(),
   delete: jest.fn(),
 };
-
-type MockRepository<T = any> = Partial<Record<keyof Repository<T>, jest.Mock>>;
 
 describe('CatsService', () => {
   let service: CatsService;
@@ -114,6 +111,60 @@ describe('CatsService', () => {
 
       expect(result).toEqual(saveCat);
       expect(repository.createCat).toHaveBeenCalledWith(createCatDto);
+    });
+  });
+
+  describe('update', () => {
+    it('should update a cat', async () => {
+      const catId = 1;
+      const updatedCatData: Cats = { catsId: catId, name: 'Snowball' };
+      const existingCat: Cats = { catsId: catId, name: 'Whiskers' };
+      const updatedCat: Cats = { catsId: catId, name: 'Snowball' };
+
+      jest.spyOn(repository, 'findOneById').mockResolvedValue(existingCat);
+      jest.spyOn(repository, 'updateCat').mockResolvedValue(updatedCat);
+
+      const result = await service.update(catId, updatedCatData);
+
+      expect(result).toEqual(updatedCat);
+      expect(repository.findOneById).toHaveBeenCalledWith(catId);
+      expect(repository.updateCat).toHaveBeenCalledWith(existingCat);
+    });
+
+    it('should throw NotFoundException if cat is not found', async () => {
+      const catId = 1;
+      const updatedCatData: Cats = { catsId: catId, name: 'Snowball' };
+
+      jest.spyOn(repository, 'findOneById').mockResolvedValue(undefined);
+
+      await expect(service.update(catId, updatedCatData)).rejects.toThrowError(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('delete', () => {
+    it('should delete a cat', async () => {
+      const catId = 1;
+      const existingCat: Cats = { catsId: catId, name: 'test' };
+
+      jest.spyOn(repository, 'findOneById').mockResolvedValue(existingCat);
+      jest.spyOn(repository, 'deleteCat').mockResolvedValue(undefined);
+
+      await service.delete(catId);
+
+      expect(repository.findOneById).toHaveBeenCalledWith(catId);
+      expect(repository.deleteCat).toHaveBeenCalledWith(catId);
+    });
+
+    it('should throw NotFoundException if cat is not found', async () => {
+      const catId = 1;
+
+      jest.spyOn(repository, 'findOneById').mockResolvedValue(undefined);
+
+      await expect(service.delete(catId)).rejects.toThrowError(
+        NotFoundException,
+      );
     });
   });
 });
