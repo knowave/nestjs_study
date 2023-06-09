@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { faker } from '@faker-js/faker';
-import { CatsRepository } from 'src/cats/cats.repository';
-import { CatsService } from 'src/cats/cats.service';
-import { Cats } from 'src/cats/entities/cats.entity';
+import { CatsRepository } from '../../src/cats/cats.repository';
+import { Cats } from '../../src/cats/entities/cats.entity';
 
 @Injectable()
 export class CatsFatory {
