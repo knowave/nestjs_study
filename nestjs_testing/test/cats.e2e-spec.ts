@@ -7,6 +7,7 @@ import { DatabaseModule } from '../src/database/database.module';
 import { DataSource } from 'typeorm';
 import { RequestHelper } from '../utils/test.utils';
 import { CatsFatory } from './factory/cats.fatory';
+import { CATS_EXCEPTION } from '../src/exceptions/error-code';
 
 describe('Cats', () => {
   let app: INestApplication;
@@ -59,6 +60,27 @@ describe('Cats', () => {
       expect(items).not.toBeNull();
       expect(meta.totalItems).toBe(11);
       expect(meta.totalPages).toBe(2);
+    });
+  });
+
+  describe('특정 고양이 조회', () => {
+    it('성공', async () => {
+      catsId = 1;
+
+      const response = await requestHelper.get(`${domain}/${catsId}`);
+
+      const body = response.body;
+      expect(response.statusCode).toBe(HttpStatus.OK);
+      expect(body.catsId).toBe(catsId);
+    });
+
+    it('catsId가 존재하지 않으면 실패', async () => {
+      const response = await requestHelper.get(`${domain}/123`);
+      
+      const body = response.body;
+      expect(response.statusCode).toBe(HttpStatus.NOT_FOUND);
+      expect(body.code).toBe(CATS_EXCEPTION.CAT_NOT_FOUND.code);
+      expect(body.message).toBe(CATS_EXCEPTION.CAT_NOT_FOUND.message);
     });
   });
 });
