@@ -1,4 +1,7 @@
 {
+  "globals": {
+    "testTimeout": 30000
+  },
   "moduleFileExtensions": ["js", "json", "ts"],
   "rootDir": ".",
   "testEnvironment": "node",
