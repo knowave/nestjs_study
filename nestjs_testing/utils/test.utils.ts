@@ -25,7 +25,7 @@ export class RequestHelper {
    * @returns
    */
   async post(url: string, body?: any): Promise<Test> {
-    return request(this.app.getHttpServer)
+    return request(this.app.getHttpServer())
       .post(url)
       .send(body)
       .set({ Authorization: `Bearer ${this.token}` });
@@ -38,14 +38,14 @@ export class RequestHelper {
    * @returns
    */
   async patch(url: string, body?: any): Promise<Test> {
-    return request(this.app.getHttpServer)
+    return request(this.app.getHttpServer())
       .patch(url)
       .send(body)
       .set({ Authorization: `Bearer ${this.token}` });
   }
 
   async delete(url: string): Promise<Test> {
-    return request(this.app.getHttpServer)
+    return request(this.app.getHttpServer())
       .delete(url)
       .set({ Authorization: `Bearer ${this.token}` });
   }
