@@ -9,6 +9,7 @@ import { RequestHelper } from '../utils/test.utils';
 import { CatsFatory } from './factory/cats.fatory';
 import { CATS_EXCEPTION } from '../src/exceptions/error-code';
 import { CreateCatDto } from '../src/cats/dto/create-cat.dto';
+import { Cats } from '../src/cats/entities/cats.entity';
 
 describe('Cats', () => {
   let app: INestApplication;
@@ -95,6 +96,39 @@ describe('Cats', () => {
       const body = response.body;
       expect(response.statusCode).toBe(HttpStatus.CREATED);
       expect(body.name).toBe(dto.name);
+    });
+  });
+
+  describe('고양이 수정', () => {
+    it('성공', async () => {
+      catsId = 1;
+      const catEntity = new Cats();
+      catEntity.name = '수정';
+
+      const response = await requestHelper.patch(
+        `${domain}/${catsId}`,
+        catEntity,
+      );
+
+      const body = response.body;
+
+      expect(response.statusCode).toBe(HttpStatus.OK);
+      expect(body.catsId).toBe(catsId);
+      expect(body.name).toBe(catEntity.name);
+    });
+
+    it('catsId가 존재하지 않으면 실패', async () => {
+      catsId = 1234;
+      const catsEntity = new Cats();
+      catsEntity.name = 'fail';
+
+      const response = await requestHelper.patch(`${domain}/${catsId}`);
+
+      const body = response.body;
+
+      expect(response.statusCode).toBe(HttpStatus.NOT_FOUND);
+      expect(body.code).toBe(CATS_EXCEPTION.CAT_NOT_FOUND.code);
+      expect(body.message).toBe(CATS_EXCEPTION.CAT_NOT_FOUND.message);
     });
   });
 });
