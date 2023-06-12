@@ -131,4 +131,26 @@ describe('Cats', () => {
       expect(body.message).toBe(CATS_EXCEPTION.CAT_NOT_FOUND.message);
     });
   });
+
+  describe('고양이 삭제', () => {
+    it('성공', async () => {
+      catsId = 11;
+
+      const response = await requestHelper.delete(`${domain}/${catsId}`);
+
+      expect(response.statusCode).toBe(HttpStatus.OK);
+    });
+
+    it('catsId가 존재하지 않으면 실패', async () => {
+      catsId = 1234;
+
+      const response = await requestHelper.delete(`${domain}/${catsId}`);
+
+      const body = response.body;
+
+      expect(response.statusCode).toBe(HttpStatus.NOT_FOUND);
+      expect(body.code).toBe(CATS_EXCEPTION.CAT_NOT_FOUND.code);
+      expect(body.message).toBe(CATS_EXCEPTION.CAT_NOT_FOUND.message);
+    });
+  });
 });
