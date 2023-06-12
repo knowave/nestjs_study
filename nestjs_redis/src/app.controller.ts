@@ -11,8 +11,8 @@ import { AppService } from './app.service';
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
-  @Get()
-  findAll(): String[] {
-    return [];
+  @Get('cache')
+  getCache() {
+    return this.appService.getCache();
   }
 }
