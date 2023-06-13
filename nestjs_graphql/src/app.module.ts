@@ -14,11 +14,6 @@ import { DatabaseModule } from './database/database.module';
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       autoSchemaFile: 'schema.gpl',
-      typePaths: ['./**/*.graphql'],
-      definitions: {
-        path: join(process.cwd(), 'src/graphql.ts'),
-        outputAs: 'class',
-      },
     }),
     ConfigModule.forRoot({
       envFilePath: '.env',
