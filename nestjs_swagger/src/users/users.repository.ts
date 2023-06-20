@@ -14,7 +14,7 @@ export class UsersRepository extends Repository<User> {
     const users = await this.find();
 
     if (users.length === 0) {
-      throw new NotFoundException();
+      throw new NotFoundException('유저들을 불러올 수 없습니다.');
     }
 
     return;
@@ -24,7 +24,7 @@ export class UsersRepository extends Repository<User> {
     const user = await this.findOne({ where: { id } });
 
     if (!user) {
-      throw new NotFoundException();
+      throw new NotFoundException('존재하는 유저가 없습니다.');
     }
 
     return user;
@@ -52,7 +52,7 @@ export class UsersRepository extends Repository<User> {
     const result = await this.delete(id);
 
     if (result.affected === 0) {
-      throw new NotFoundException();
+      throw new NotFoundException('존재하는 유저가 없습니다.');
     }
   }
 }
