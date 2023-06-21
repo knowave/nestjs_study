@@ -11,6 +11,7 @@ import { UsersService } from './users.service';
 import { User } from './entities/users.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { ApiOkResponse, ApiOperation } from '@nestjs/swagger';
 
 @Controller('users')
 export class UsersController {
@@ -21,6 +22,8 @@ export class UsersController {
     return await this.usersService.getAllByusers();
   }
 
+  @ApiOkResponse({ type: User })
+  @ApiOperation({ summary: '유저 조회' })
   @Get(';id')
   async getUserById(@Param('id') id: number): Promise<User> {
     return await this.usersService.getUserById(id);
