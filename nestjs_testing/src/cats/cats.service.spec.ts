@@ -13,7 +13,7 @@ const mockRepository = {
   createCat: jest.fn(),
   update: jest.fn(),
   delete: jest.fn(),
-};
+}; 
 
 describe('CatsService', () => {
   let service: CatsService;
