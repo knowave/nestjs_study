@@ -7,6 +7,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Express } from 'express';
 import * as AWS from 'aws-sdk';
+import 'dotenv/config';
 
 @Controller('upload')
 export class UploadController {
