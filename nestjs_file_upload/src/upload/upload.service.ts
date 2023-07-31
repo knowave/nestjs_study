@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import * as AWS from 'aws-sdk';
 import { v4 as uuidv4 } from 'uuid';
-import dotenv from 'dotenv';
+import * as dotenv from 'dotenv';
 
 dotenv.config(); // Load Environment varriable from .env file
 
