@@ -9,13 +9,15 @@ import { MyPaginationQuery } from '../base/pagination-query';
 import { MyPagination } from '../base/pagination-response';
 import { PostListResponseDto } from './dto/post-list-response.dto';
 import { paginate } from 'nestjs-typeorm-paginate';
+import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
 export class PostsService {
   constructor(
+    @InjectRepository(PostsRepository)
+    private readonly postsRepository: PostsRepository,
     private readonly usersService: UsersService,
     private readonly uploadService: UploadService,
-    private readonly postsRepository: PostsRepository,
   ) {}
 
   async getAllByPosts(
