@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { UploadService } from 'src/upload/upload.service';
-import { UsersService } from 'src/users/users.service';
+import { UploadService } from '../upload/upload.service';
+import { UsersService } from '../users/users.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PostsRepository } from './posts.repository';
 import { Post } from '../entities/post.entity';

@@ -5,10 +5,10 @@ import { UsersModule } from 'src/users/users.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
-import { UsersRepository } from 'src/users/users.repository';
-import { LocalStrategy } from 'src/strategies/local.strategy';
-import { JwtStrategy } from 'src/strategies/jwt.strategy';
-import { JwtRefreshStrategy } from 'src/strategies/jwt-refresh.stratege';
+import { UsersRepository } from '../users/users.repository';
+import { LocalStrategy } from '../strategies/local.strategy';
+import { JwtStrategy } from '../strategies/jwt.strategy';
+import { JwtRefreshStrategy } from '../strategies/jwt-refresh.stratege';
 
 @Module({
   imports: [

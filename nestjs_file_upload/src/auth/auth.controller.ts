@@ -1,9 +1,9 @@
 import { Body, Controller, Delete, Param, Patch, Post, ValidationPipe } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { UsersService } from 'src/users/users.service';
-import { CreateUserDto } from 'src/users/dto/create-user.dto';
-import { User } from 'src/entities/user.entity';
-import { CurrentUser } from 'src/decorators/current-user.decorator';
+import { UsersService } from '../users/users.service';
+import { CreateUserDto } from '../users/dto/create-user.dto';
+import { User } from '../entities/user.entity';
+import { CurrentUser } from '../decorators/current-user.decorator';
 import { LoginResponseDto } from './dto/login-response.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
