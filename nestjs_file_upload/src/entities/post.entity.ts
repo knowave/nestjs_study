@@ -15,8 +15,10 @@ export class Post {
   @Column()
   status: string;
 
-  @Column()
-  image: string[];
+  @Column('longtext', {
+    nullable: true,
+  })
+  image?: string[] | null;
 
   @ManyToMany(() => User, (user) => user.posts)
   user: User;
