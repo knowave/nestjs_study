@@ -18,8 +18,5 @@ export class CreatePostDto {
   @IsString()
   status: string;
 
-  @IsNotEmpty()
-  @ArrayMinSize(1)
-  @ArrayMaxSize(10)
-  image: Express.MulterS3.File[];
+  image?: Express.MulterS3.File[] | null;
 }
