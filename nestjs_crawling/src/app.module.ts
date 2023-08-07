@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { CrawlingService } from './crawling/crawling.service';
 import { DatabaseModule } from './database/database.module';
 import { ConfigModule } from '@nestjs/config';
+import { CrawlingModule } from './crawling/crawling.module';
 import * as Joi from '@hapi/joi';
 
 @Module({
@@ -19,8 +19,9 @@ import * as Joi from '@hapi/joi';
       }),
     }),
     DatabaseModule,
+    CrawlingModule,
   ],
   controllers: [AppController],
-  providers: [AppService, CrawlingService],
+  providers: [AppService],
 })
 export class AppModule {}
