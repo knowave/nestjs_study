@@ -1,9 +1,7 @@
 // crawling.service.ts
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import axios from 'axios';
-import cheerio from 'cheerio';
+import * as cheerio from 'cheerio';
 
 @Injectable()
 export class CrawlingService {
@@ -21,8 +19,6 @@ export class CrawlingService {
         const item = $(element).text();
         data.push(item);
       });
-
-      console.log(response);
 
       return data;
     } catch (error) {
