@@ -2,6 +2,7 @@
 import { Injectable } from '@nestjs/common';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
+import iconv from 'iconv-lite';
 
 @Injectable()
 export class CrawlingService {
@@ -15,9 +16,11 @@ export class CrawlingService {
 
       // 웹 페이지에서 필요한 데이터 추출
       const data = [];
-      $('selector-for-target-elements').each((index, element) => {
+      $('.cont_thumb').each((index, element) => {
+        const image = $(element).find('.info_thumb').text();
+        console.log('image: ', image);
         const item = $(element).text();
-        data.push(item);
+        data.push(item.trim());
       });
 
       return data;
