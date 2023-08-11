@@ -15,7 +15,7 @@ import * as Joi from '@hapi/joi';
         DB_PORT: Joi.string().required(),
         DB_USERNAME: Joi.string().required(),
         DB_PASSWORD: Joi.string().required(),
-        DB_NAME: Joi.string().required(),
+        DB_NAME: Joi.string().required(), 
       }),
     }),
     DatabaseModule,
