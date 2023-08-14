@@ -35,8 +35,8 @@ export class UsersService {
         return { ok: false, error: '이미 존재하는 유저가 있습니다.' };
       }
 
-      await queryRunner.manager.save(createUser);
-
+      await queryRunner.manager.save(User, createUser);
+      await queryRunner.commitTransaction();
       return { ok: true };
     } catch (err) {
       await queryRunner.rollbackTransaction();
