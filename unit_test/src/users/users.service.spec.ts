@@ -3,22 +3,15 @@ import { UsersService } from './users.service';
 import { DataSource, QueryRunner, Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { CreateUserDto } from './dto/create-user.dto';
+import { createConnection } from 'mysql2';
 
 const mockRepository = () => ({
   findOne: jest.fn(),
-  create: jest.fn(),
+  find: jest.fn(),
   save: jest.fn(),
+  delete: jest.fn(),
 });
-
-const mockQueryRunner = {
-  manager: {},
-} as QueryRunner;
-
-class MockDataSource {
-  createQueryRunner(): QueryRunner {
-    return mockQueryRunner;
-  }
-}
 
 type MockRepository<T = any> = Partial<Record<keyof Repository<T>, jest.Mock>>;
 
@@ -26,6 +19,16 @@ describe('UsersService', () => {
   let service: UsersService;
   let dataSource: DataSource;
   let repository: MockRepository<User>;
+
+  const mockQueryRunner = {
+    manager: {},
+  } as QueryRunner;
+
+  class MockDataSource {
+    createQueryRunner(mode?: 'master' | 'slave'): QueryRunner {
+      return mockQueryRunner;
+    }
+  }
 
   beforeEach(async () => {
     Object.assign(mockQueryRunner.manager, {
@@ -47,6 +50,10 @@ describe('UsersService', () => {
           useClass: MockDataSource,
         },
         {
+          provide: createConnection,
+          useValue: jest.fn(),
+        },
+        {
           provide: getRepositoryToken(User),
           useValue: mockRepository(),
         },
@@ -58,7 +65,31 @@ describe('UsersService', () => {
     dataSource = module.get<DataSource>(DataSource);
   });
 
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  describe('CreateUser', () => {
+    it('유저 생성 성공', async () => {
+      const createUser: CreateUserDto = {
+        email: 'tester@gmail.com',
+        firstName: 'kim',
+        secondName: 'tester',
+      };
+      const queryRunner = dataSource.createQueryRunner();
+
+      repository.findOne.mockResolvedValue(null);
+
+      jest.spyOn(queryRunner.manager, 'create').mockReturnValue([createUser]);
+      jest.spyOn(queryRunner.manager, 'save').mockResolvedValueOnce(createUser);
+
+      const result = await service.createUser(createUser);
+      expect(queryRunner.manager.save).toHaveBeenCalledWith(User, [createUser]);
+      expect(result).toEqual({ ok: true });
+    });
   });
 });
