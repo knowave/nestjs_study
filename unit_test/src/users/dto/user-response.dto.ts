@@ -1,3 +1,3 @@
-import { ResponseDto } from 'src/common/dto/reponse.dto';
+import { ResponseDto } from 'src/common/dto/response.dto';
 
 export class UserResponseDto extends ResponseDto {}
