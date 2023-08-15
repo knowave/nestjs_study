@@ -91,5 +91,26 @@ describe('UsersService', () => {
       expect(queryRunner.manager.save).toHaveBeenCalledWith(User, [createUser]);
       expect(result).toEqual({ ok: true });
     });
+
+    it('이미 존재하는 이메일이 있으면 실패', async () => {
+      const existUser: CreateUserDto = {
+        email: 'exist@example.com',
+        firstName: 'kim',
+        secondName: 'min-jae',
+      };
+
+      const queryRunner = dataSource.createQueryRunner();
+
+      repository.findOne.mockResolvedValue(existUser.email);
+
+      jest.spyOn(queryRunner.manager, 'create').mockReturnValue([existUser]);
+      jest.spyOn(queryRunner.manager, 'save').mockResolvedValue(existUser);
+
+      const result = await service.createUser(existUser);
+      expect(result).toEqual({
+        ok: false,
+        error: '이미 존재하는 유저가 있습니다.',
+      });
+    });
   });
 });
