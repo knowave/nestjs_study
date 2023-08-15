@@ -128,4 +128,21 @@ describe('UsersService', () => {
       });
     });
   });
+
+  describe('GetUserById', () => {
+    const testId = 11;
+    it('해당 Id 값을 가지고 있는 유저 찾기 성공', async () => {
+      repository.findOne.mockResolvedValue(testId);
+      const result = await service.getUserById(testId);
+
+      expect(result).toEqual({ ok: true });
+    });
+
+    it('존재하지 않은 Id 값을 가지고 올 경우 실패', async () => {
+      repository.findOne.mockResolvedValue(null);
+      const result = await service.getUserById(testId);
+
+      expect(result).toEqual({ ok: false, error: '존재하지 않는 유저입니다.' });
+    });
+  });
 });
