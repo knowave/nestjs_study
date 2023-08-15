@@ -88,7 +88,15 @@ describe('UsersService', () => {
       jest.spyOn(queryRunner.manager, 'save').mockResolvedValueOnce(createUser);
 
       const result = await service.createUser(createUser);
+
       expect(queryRunner.manager.save).toHaveBeenCalledWith(User, [createUser]);
+
+      expect(queryRunner.connect).toHaveBeenCalledTimes(1);
+      expect(queryRunner.startTransaction).toHaveBeenCalledTimes(1);
+      expect(queryRunner.commitTransaction).toHaveBeenCalledTimes(1);
+      expect(queryRunner.rollbackTransaction).toHaveBeenCalledTimes(0);
+      expect(queryRunner.release).toHaveBeenCalledTimes(1);
+
       expect(result).toEqual({ ok: true });
     });
 
@@ -107,6 +115,13 @@ describe('UsersService', () => {
       jest.spyOn(queryRunner.manager, 'save').mockResolvedValue(existUser);
 
       const result = await service.createUser(existUser);
+
+      expect(queryRunner.connect).toHaveBeenCalledTimes(1);
+      expect(queryRunner.startTransaction).toHaveBeenCalledTimes(1);
+      expect(queryRunner.commitTransaction).toHaveBeenCalledTimes(0);
+      expect(queryRunner.rollbackTransaction).toHaveBeenCalledTimes(0);
+      expect(queryRunner.release).toHaveBeenCalledTimes(1);
+
       expect(result).toEqual({
         ok: false,
         error: '이미 존재하는 유저가 있습니다.',
