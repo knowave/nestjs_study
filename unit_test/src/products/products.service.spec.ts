@@ -122,22 +122,24 @@ describe('ProductsService', () => {
 
       expect(result).toEqual({ ok: false, error: '존재하는 유저가 없습니다.' });
     });
+  });
 
-    it('생성하고자 하는 상품의 데이터가 없을 때 Transaction은 Rollback이 되어서 생성 실패가 되어야한다.', async () => {
-      const queryRunner = dataSource.createQueryRunner();
-      usersRepository.findOne.mockResolvedValue(user.id);
+  describe('GetProductById', () => {
+    const mockedProductId = 1;
+    it('존재하는 ProductId가 있으면 product 조회를 성공해야한다.', async () => {
+      productRepository.findOne.mockResolvedValue(mockedProductId);
 
-      jest.spyOn(queryRunner.manager, 'save').mockResolvedValueOnce({});
+      const result = await service.getProductById(mockedProductId);
 
-      const result = await service.createProduct(
-        {
-          name: undefined,
-          description: undefined,
-        },
-        user,
-      );
+      expect(result).toEqual({ ok: true });
+    });
 
-      console.log(result);
+    it('존재하지 않는 ProductId를 호출할 시 product 조회는 실패해야한다.', async () => {
+      productRepository.findOne.mockResolvedValue(undefined);
+
+      const result = await service.getProductById(mockedProductId);
+
+      expect(result).toEqual({ ok: false, error: '존재하는 상품이 없습니다.' });
     });
   });
 });
