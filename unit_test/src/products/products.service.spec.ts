@@ -24,11 +24,6 @@ class MockDataSource {
 type MockRepository<T = any> = Partial<Record<keyof Repository<T>, jest.Mock>>;
 
 describe('ProductsService', () => {
-  Object.assign(mockQueryRunner.manager, {
-    create: jest.fn(),
-    save: jest.fn(),
-  });
-
   let service: ProductsService;
   let dataSource: DataSource;
   let productRepository: MockRepository<Product>;
@@ -36,16 +31,21 @@ describe('ProductsService', () => {
   let user = new User();
 
   beforeEach(async () => {
-    user.id = 1;
-    user.email = 'test@example.com';
-    user.firstName = 'John';
-    user.secondName = 'Doe';
+    Object.assign(mockQueryRunner.manager, {
+      create: jest.fn(),
+      save: jest.fn(),
+    });
 
     mockQueryRunner.connect = jest.fn();
     mockQueryRunner.startTransaction = jest.fn();
     mockQueryRunner.commitTransaction = jest.fn();
     mockQueryRunner.rollbackTransaction = jest.fn();
     mockQueryRunner.release = jest.fn();
+
+    user.id = 1;
+    user.email = 'test@example.com';
+    user.firstName = 'John';
+    user.secondName = 'Doe';
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -121,6 +121,23 @@ describe('ProductsService', () => {
       expect(queryRunner.release).toHaveBeenCalledTimes(1);
 
       expect(result).toEqual({ ok: false, error: '존재하는 유저가 없습니다.' });
+    });
+
+    it('생성하고자 하는 상품의 데이터가 없을 때 Transaction은 Rollback이 되어서 생성 실패가 되어야한다.', async () => {
+      const queryRunner = dataSource.createQueryRunner();
+      usersRepository.findOne.mockResolvedValue(user.id);
+
+      jest.spyOn(queryRunner.manager, 'save').mockResolvedValueOnce({});
+
+      const result = await service.createProduct(
+        {
+          name: undefined,
+          description: undefined,
+        },
+        user,
+      );
+
+      console.log(result);
     });
   });
 });
