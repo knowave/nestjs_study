@@ -37,7 +37,8 @@ describe('ProductsService', () => {
 
   let service: ProductsService;
   let dataSource: DataSource;
-  let repository: MockRepository<Product>;
+  let productRepository: MockRepository<Product>;
+  let usersRepository: MockRepository<User>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -59,13 +60,52 @@ describe('ProductsService', () => {
     }).compile();
 
     service = module.get<ProductsService>(ProductsService);
-    repository = module.get<MockRepository<Product>>(
+    dataSource = module.get<DataSource>(DataSource);
+
+    productRepository = module.get<MockRepository<Product>>(
       getRepositoryToken(Product),
     );
-    dataSource = module.get<DataSource>(DataSource);
+    usersRepository = module.get<MockRepository<User>>(getRepositoryToken(User));
   });
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  describe('CreateProduct', () => {
+    let user = new User();
+
+    user.id = 1;
+    user.email = 'test@example.com';
+    user.firstName = 'John';
+    user.secondName = 'Doe';
+
+    const mockedProduct = {
+      name: 'Test Product.',
+      description: 'Test Product Description',
+    };
+    it('상품 생성 성공', async () => {
+      const queryRunner = dataSource.createQueryRunner();
+      usersRepository.findOne.mockResolvedValue(user.id);
+
+      jest
+        .spyOn(queryRunner.manager, 'save')
+        .mockResolvedValueOnce(mockedProduct);
+
+      const result = await service.createProduct(mockedProduct, user);
+
+      expect(queryRunner.connect).toHaveBeenCalledTimes(1);
+      expect(queryRunner.startTransaction).toHaveBeenCalledTimes(1);
+      expect(queryRunner.commitTransaction).toHaveBeenCalledTimes(1);
+      expect(queryRunner.rollbackTransaction).toHaveBeenCalledTimes(0);
+      expect(queryRunner.release).toHaveBeenCalledTimes(1);
+
+      expect(result).toEqual({ ok: true });
+    });
+
+    it('userId가 없으면 생성 실패', async () => {
+      const queryRunner = dataSource.createQueryRunner();
+      usersRepository.findOne
+    });
   });
 });
