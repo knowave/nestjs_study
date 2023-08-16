@@ -29,18 +29,24 @@ describe('ProductsService', () => {
     save: jest.fn(),
   });
 
-  mockQueryRunner.connect = jest.fn();
-  mockQueryRunner.startTransaction = jest.fn();
-  mockQueryRunner.commitTransaction = jest.fn();
-  mockQueryRunner.rollbackTransaction = jest.fn();
-  mockQueryRunner.release = jest.fn();
-
   let service: ProductsService;
   let dataSource: DataSource;
   let productRepository: MockRepository<Product>;
   let usersRepository: MockRepository<User>;
+  let user = new User();
 
   beforeEach(async () => {
+    user.id = 1;
+    user.email = 'test@example.com';
+    user.firstName = 'John';
+    user.secondName = 'Doe';
+
+    mockQueryRunner.connect = jest.fn();
+    mockQueryRunner.startTransaction = jest.fn();
+    mockQueryRunner.commitTransaction = jest.fn();
+    mockQueryRunner.rollbackTransaction = jest.fn();
+    mockQueryRunner.release = jest.fn();
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ProductsService,
@@ -65,7 +71,9 @@ describe('ProductsService', () => {
     productRepository = module.get<MockRepository<Product>>(
       getRepositoryToken(Product),
     );
-    usersRepository = module.get<MockRepository<User>>(getRepositoryToken(User));
+    usersRepository = module.get<MockRepository<User>>(
+      getRepositoryToken(User),
+    );
   });
 
   it('should be defined', () => {
@@ -73,13 +81,6 @@ describe('ProductsService', () => {
   });
 
   describe('CreateProduct', () => {
-    let user = new User();
-
-    user.id = 1;
-    user.email = 'test@example.com';
-    user.firstName = 'John';
-    user.secondName = 'Doe';
-
     const mockedProduct = {
       name: 'Test Product.',
       description: 'Test Product Description',
@@ -105,7 +106,21 @@ describe('ProductsService', () => {
 
     it('userId가 없으면 생성 실패', async () => {
       const queryRunner = dataSource.createQueryRunner();
-      usersRepository.findOne
+      usersRepository.findOne.mockResolvedValue(undefined);
+
+      jest
+        .spyOn(queryRunner.manager, 'save')
+        .mockResolvedValueOnce(mockedProduct);
+
+      const result = await service.createProduct(mockedProduct, user);
+
+      expect(queryRunner.connect).toHaveBeenCalledTimes(1);
+      expect(queryRunner.startTransaction).toHaveBeenCalledTimes(1);
+      expect(queryRunner.commitTransaction).toHaveBeenCalledTimes(0);
+      expect(queryRunner.rollbackTransaction).toHaveBeenCalledTimes(0);
+      expect(queryRunner.release).toHaveBeenCalledTimes(1);
+
+      expect(result).toEqual({ ok: false, error: '존재하는 유저가 없습니다.' });
     });
   });
 });
