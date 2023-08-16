@@ -16,7 +16,7 @@ const mockQueryRunner = {
 } as QueryRunner;
 
 class MockDataSource {
-  createQueryRunner(): QueryRunner {
+  createQueryRunner(mode?: 'master' | 'slave'): QueryRunner {
     return mockQueryRunner;
   }
 }
