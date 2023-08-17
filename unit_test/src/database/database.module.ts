@@ -18,7 +18,7 @@ import { DataSource } from 'typeorm';
         entities: [__dirname + '../../**/entities/**.entity{.ts,.js}'],
         migrations: [__dirname + '/migrations/*.ts'],
         synchronize: true,
-        migrationsRun: false,
+        migrationsRun: true,
       }),
 
       dataSourceFactory: async (options) => {
