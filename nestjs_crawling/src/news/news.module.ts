@@ -5,10 +5,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { News } from './entities/news.entity';
 import { CrawlingModule } from 'src/crawling/crawling.module';
 import { CrawlingService } from 'src/crawling/crawling.service';
+import { ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [TypeOrmModule.forFeature([News]), CrawlingModule],
-  providers: [NewsService, CrawlingService],
+  providers: [NewsService, CrawlingService, ConfigService],
   controllers: [NewsController],
 })
 export class NewsModule {}
