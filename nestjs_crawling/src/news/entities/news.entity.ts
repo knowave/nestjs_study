@@ -11,6 +11,6 @@ export class News {
   @Column()
   category: string;
 
-  @Column()
+  @Column({ nullable: true })
   image: string;
 }
