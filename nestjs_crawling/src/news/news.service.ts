@@ -1,35 +1,69 @@
-import { Injectable } from '@nestjs/common';
-import { CreateNewsDto } from './dto/create-news.dto';
-import { UpdateNewsDto } from './dto/update-news.dto';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CrawlingService } from 'src/crawling/crawling.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { News } from './entities/news.entity';
 import { Repository } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
+import { PaginationDto } from './dto/pagination.dto';
 
 @Injectable()
 export class NewsService {
   constructor(
     private readonly crawlingService: CrawlingService,
+    private readonly configService: ConfigService,
     @InjectRepository(News) private readonly newsRepository: Repository<News>,
   ) {}
 
-  create({ title, category, image }: CreateNewsDto) {
-    return 'This action adds a new news';
+  async createNews(): Promise<News[]> {
+    const url = this.configService.get<string>('CRAWLING_URL');
+    const crawlingData = await this.crawlingService.crawlDataFromWebpage(url);
+    const savedNews = [];
+
+    for (const data of crawlingData) {
+      const newsEntity = this.newsRepository.create({
+        title: data.title,
+        category: data.category,
+        image: data.image,
+      });
+
+      savedNews.push(await this.newsRepository.save(newsEntity));
+    }
+
+    return savedNews;
   }
 
-  findAll() {
-    return `This action returns all news`;
+  async getAllNews({ page, limit }: PaginationDto) {
+    const news = await this.newsRepository
+      .createQueryBuilder('news')
+      .orderBy('news_id', 'DESC')
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .getMany();
+
+    const totalCount = await this.newsRepository.count();
+    const totalItems = await this.newsRepository.count();
+    const totalPages = Math.ceil(totalItems / limit);
+
+    return {
+      items: news,
+      totalCount: totalCount,
+      totalItems: totalItems,
+      totalPages: totalPages,
+    };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} news`;
+  async getNewsById(id: number): Promise<News> {
+    const news = await this.newsRepository.findOne({ where: { id } });
+
+    if (!news) {
+      throw new NotFoundException('NOT EXIST NEWS');
+    }
+
+    return news;
   }
 
-  update(id: number, updateNewsDto: UpdateNewsDto) {
-    return `This action updates a #${id} news`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} news`;
+  async removeNews(id: number): Promise<void> {
+    const news = await this.getNewsById(id);
+    await this.newsRepository.delete(news.id);
   }
 }
