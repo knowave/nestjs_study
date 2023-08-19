@@ -2,7 +2,6 @@
 import { Injectable } from '@nestjs/common';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
-import iconv from 'iconv-lite';
 
 @Injectable()
 export class CrawlingService {
