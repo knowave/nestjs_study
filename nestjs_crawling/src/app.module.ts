@@ -5,7 +5,6 @@ import { DatabaseModule } from './database/database.module';
 import { ConfigModule } from '@nestjs/config';
 import { CrawlingModule } from './crawling/crawling.module';
 import { NewsModule } from './news/news.module';
-import { UploadModule } from './upload/upload.module';
 import * as Joi from '@hapi/joi';
 
 @Module({
@@ -23,7 +22,6 @@ import * as Joi from '@hapi/joi';
     DatabaseModule,
     CrawlingModule,
     NewsModule,
-    UploadModule,
   ],
   controllers: [AppController],
   providers: [AppService],
