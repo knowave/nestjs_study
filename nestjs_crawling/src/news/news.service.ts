@@ -5,6 +5,7 @@ import { News } from './entities/news.entity';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { PaginationDto } from './dto/pagination.dto';
+import { UploadService } from 'src/upload/upload.service';
 
 @Injectable()
 export class NewsService {
