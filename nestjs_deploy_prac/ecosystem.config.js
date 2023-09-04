@@ -4,7 +4,7 @@
 module.exports = {
     apps: [
         {
-            name: "chopsticks-gcp-cron-job",        // pm2 start App name
+            name: "test",        // pm2 start App name
             script: "dist/main.js",
             exec_mode: "cluster",                   // "cluster" or "fork"
             instance_var: "INSTANCE_ID",            // Instance Variable
