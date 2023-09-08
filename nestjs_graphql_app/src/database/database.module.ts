@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 
 @Module({
   imports: [
@@ -21,6 +22,15 @@ import { TypeOrmModule } from '@nestjs/typeorm';
         migrationsRun: true,
         charset: 'utf8mb4_unicode_ci',
       }),
+      dataSourceFactory: async (options) => {
+        try {
+          const dataSource = await new DataSource(options).initialize();
+          console.log('Data Source has been initialized!');
+          return dataSource;
+        } catch (err) {
+          console.log('Error establishing database connection:', err);
+        }
+      },
     }),
   ],
 })
