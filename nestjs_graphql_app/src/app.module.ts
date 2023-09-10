@@ -6,6 +6,7 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import GraphQLJSON from 'graphql-type-json';
 import { Context } from 'apollo-server-core';
+import { PostModule } from './post/post.module';
 import * as Joi from 'joi';
 
 @Module({
@@ -38,6 +39,7 @@ import * as Joi from 'joi';
     }),
     UserModule,
     DataBaseModule,
+    PostModule,
   ],
 })
 export class AppModule {}
