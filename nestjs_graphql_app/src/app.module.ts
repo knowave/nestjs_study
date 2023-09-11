@@ -8,6 +8,8 @@ import GraphQLJSON from 'graphql-type-json';
 import { Context } from 'apollo-server-core';
 import * as Joi from 'joi';
 import { FeedModule } from './feed/feed.module';
+import { TrainerModule } from './trainer/trainer.module';
+import { GymModule } from './gym/gym.module';
 
 @Module({
   imports: [
@@ -40,6 +42,8 @@ import { FeedModule } from './feed/feed.module';
     UserModule,
     DataBaseModule,
     FeedModule,
+    TrainerModule,
+    GymModule,
   ],
 })
 export class AppModule {}
