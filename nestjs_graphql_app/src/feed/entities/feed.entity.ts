@@ -3,6 +3,7 @@ import { IsEnum } from 'class-validator';
 import { BaseEntity } from 'src/common/entities/base.entity';
 import { Gym } from 'src/gym/entities/gym.entity';
 import { Like } from 'src/like/entities/like.entity';
+import { Reply } from 'src/reply/entities/reply.entity';
 import { Trainer } from 'src/trainer/entities/trainer.entity';
 import { User } from 'src/user/entities/user.entity';
 import { Column, Entity, ManyToOne, OneToMany } from 'typeorm';
@@ -64,4 +65,13 @@ export class Feed extends BaseEntity {
     cascade: ['soft-remove'],
   })
   likes?: Like[];
+
+  @Field(() => [Reply], { nullable: true })
+  @OneToMany(() => Reply, (reply) => reply.feed, {
+    eager: true,
+    nullable: true,
+    onDelete: 'CASCADE',
+    cascade: ['soft-remove'],
+  })
+  replies?: Reply[];
 }
