@@ -2,6 +2,7 @@ import { ObjectType, Field, Int, InputType } from '@nestjs/graphql';
 import { IsEnum } from 'class-validator';
 import { BaseEntity } from 'src/common/entities/base.entity';
 import { Gym } from 'src/gym/entities/gym.entity';
+import { Like } from 'src/like/entities/like.entity';
 import { Trainer } from 'src/trainer/entities/trainer.entity';
 import { User } from 'src/user/entities/user.entity';
 import { Column, Entity, ManyToOne, OneToMany } from 'typeorm';
@@ -54,4 +55,13 @@ export class Feed extends BaseEntity {
     cascade: ['soft-remove'],
   })
   gyms?: Gym[];
+
+  @Field(() => [Like], { nullable: true })
+  @OneToMany(() => Like, (like) => like.feed, {
+    eager: true,
+    nullable: true,
+    onDelete: 'CASCADE',
+    cascade: ['soft-remove'],
+  })
+  likes?: Like[];
 }
