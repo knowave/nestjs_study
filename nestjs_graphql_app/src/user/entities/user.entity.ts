@@ -21,6 +21,10 @@ export class User extends BaseEntity {
   @Column({ nullable: true })
   password?: string;
 
+  @Field(() => Boolean, { nullable: true })
+  @Column({ nullable: true })
+  blocked?: boolean;
+
   @Field(() => String, { nullable: true })
   @Column('text', { nullable: true })
   jwtToken?: string;
