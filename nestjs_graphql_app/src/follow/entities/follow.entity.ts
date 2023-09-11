@@ -10,7 +10,7 @@ import { Entity, ManyToOne } from 'typeorm';
 @Entity()
 export class Follow extends BaseEntity {
   @Field(() => User, { nullable: true })
-  @ManyToOne(() => User, (user) => user.follow, {
+  @ManyToOne(() => User, (user) => user.follows, {
     eager: true,
     nullable: true,
     onDelete: 'CASCADE',
@@ -19,7 +19,7 @@ export class Follow extends BaseEntity {
   user?: User;
 
   @Field(() => Gym, { nullable: true })
-  @ManyToOne(() => Gym, (gym) => gym.follow, {
+  @ManyToOne(() => Gym, (gym) => gym.follows, {
     eager: true,
     nullable: true,
     onDelete: 'CASCADE',
@@ -28,7 +28,7 @@ export class Follow extends BaseEntity {
   gym?: Gym;
 
   @Field(() => Trainer, { nullable: true })
-  @ManyToOne(() => Trainer, (trainer) => trainer.follow, {
+  @ManyToOne(() => Trainer, (trainer) => trainer.follows, {
     eager: true,
     nullable: true,
     onDelete: 'CASCADE',
