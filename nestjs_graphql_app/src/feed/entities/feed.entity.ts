@@ -1,8 +1,10 @@
 import { ObjectType, Field, Int, InputType } from '@nestjs/graphql';
 import { IsEnum } from 'class-validator';
 import { BaseEntity } from 'src/common/entities/base.entity';
+import { Gym } from 'src/gym/entities/gym.entity';
+import { Trainer } from 'src/trainer/entities/trainer.entity';
 import { User } from 'src/user/entities/user.entity';
-import { Column, Entity, ManyToOne } from 'typeorm';
+import { Column, Entity, ManyToOne, OneToMany } from 'typeorm';
 
 export enum FeedStatus {
   PUBLIC = 'PUBLIC',
@@ -34,4 +36,22 @@ export class Feed extends BaseEntity {
     cascade: ['soft-remove'],
   })
   user?: User;
+
+  @Field(() => Trainer, { nullable: true })
+  @ManyToOne(() => Trainer, (trainer) => trainer.feeds, {
+    eager: true,
+    nullable: true,
+    onDelete: 'CASCADE',
+    cascade: ['soft-remove'],
+  })
+  trainer?: Trainer;
+
+  @Field(() => [Gym], { nullable: true })
+  @OneToMany(() => Gym, (gym) => gym.feed, {
+    eager: true,
+    nullable: true,
+    onDelete: 'CASCADE',
+    cascade: ['soft-remove'],
+  })
+  gyms?: Gym[];
 }
