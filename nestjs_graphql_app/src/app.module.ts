@@ -10,6 +10,9 @@ import * as Joi from 'joi';
 import { FeedModule } from './feed/feed.module';
 import { TrainerModule } from './trainer/trainer.module';
 import { GymModule } from './gym/gym.module';
+import { ReplyModule } from './reply/reply.module';
+import { FollowModule } from './follow/follow.module';
+import { LikeModule } from './like/like.module';
 
 @Module({
   imports: [
@@ -44,6 +47,9 @@ import { GymModule } from './gym/gym.module';
     FeedModule,
     TrainerModule,
     GymModule,
+    ReplyModule,
+    FollowModule,
+    LikeModule,
   ],
 })
 export class AppModule {}
