@@ -4,15 +4,15 @@ import { BaseEntity } from 'src/common/entities/base.entity';
 import { User } from 'src/user/entities/user.entity';
 import { Column, Entity, ManyToOne } from 'typeorm';
 
-export enum PostStatus {
+export enum FeedStatus {
   PUBLIC = 'PUBLIC',
   PRIVATE = 'PRIVATE',
 }
 
-@InputType('postInputType', { isAbstract: true })
+@InputType('feedInputType', { isAbstract: true })
 @ObjectType()
 @Entity()
-export class Post extends BaseEntity {
+export class Feed extends BaseEntity {
   @Field(() => String, { nullable: true })
   @Column({ nullable: true })
   title?: string;
@@ -21,13 +21,13 @@ export class Post extends BaseEntity {
   @Column('text', { nullable: true })
   description?: string;
 
-  @Column({ enum: PostStatus, type: 'enum' })
-  @Field(() => PostStatus)
-  @IsEnum(PostStatus)
-  status: PostStatus;
+  @Column({ enum: FeedStatus, type: 'enum' })
+  @Field(() => FeedStatus)
+  @IsEnum(FeedStatus)
+  status: FeedStatus;
 
   @Field(() => User, { nullable: true })
-  @ManyToOne(() => User, (user) => user.posts, {
+  @ManyToOne(() => User, (user) => user.feeds, {
     eager: true,
     nullable: true,
     onDelete: 'CASCADE',
