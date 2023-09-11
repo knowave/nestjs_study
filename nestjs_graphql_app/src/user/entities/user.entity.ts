@@ -1,7 +1,9 @@
 import { Field, InputType, ObjectType } from '@nestjs/graphql';
 import { BaseEntity } from 'src/common/entities/base.entity';
 import { Feed } from 'src/feed/entities/feed.entity';
-import { Column, Entity, OneToMany } from 'typeorm';
+import { Gym } from 'src/gym/entities/gym.entity';
+import { Trainer } from 'src/trainer/entities/trainer.entity';
+import { Column, Entity, JoinColumn, OneToMany, OneToOne } from 'typeorm';
 
 @InputType('UserInputType', { isAbstract: true })
 @ObjectType()
@@ -23,6 +25,14 @@ export class User extends BaseEntity {
   @Column('text', { nullable: true })
   jwtToken?: string;
 
+  @OneToOne(() => Trainer, {
+    nullable: true,
+    onDelete: 'CASCADE',
+    cascade: ['soft-remove'],
+  })
+  @JoinColumn()
+  trainer?: Trainer;
+
   @Field(() => [Feed], { nullable: true })
   @OneToMany(() => Feed, (feed) => feed.user, {
     eager: true,
@@ -31,4 +41,13 @@ export class User extends BaseEntity {
     cascade: ['soft-remove'],
   })
   feeds?: Feed[];
+
+  @Field(() => [Gym], { nullable: true })
+  @OneToMany(() => Gym, (gym) => gym.user, {
+    eager: true,
+    nullable: true,
+    onDelete: 'CASCADE',
+    cascade: ['soft-remove'],
+  })
+  gyms?: Gym[];
 }
