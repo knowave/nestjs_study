@@ -81,6 +81,7 @@ export class UserService {
     ...editUserInput
   }: EditUserInput): Promise<EditUserOutput> {
     try {
+      let hashedPassword: string;
       const user = await this.userRepository.findOne({
         where: { id: id },
       });
@@ -89,9 +90,14 @@ export class UserService {
         return { ok: false, error: '존재하지 않는 사용자입니다.' };
       }
 
+      if (password) {
+        hashedPassword = await bcrypt.hash(password, +process.env.BCRYPT_SALT);
+      }
+
       await this.userRepository.save({
         ...user,
         ...editUserInput,
+        password: password ? hashedPassword : user.password,
       });
       return { ok: true };
     } catch (err) {
