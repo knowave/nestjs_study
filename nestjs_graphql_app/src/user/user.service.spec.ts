@@ -84,15 +84,11 @@ describe('UserService', () => {
       jest
         .spyOn(queryRunner.manager, 'create')
         .mockReturnValue([mockCreateUser]);
-
       jest.spyOn(queryRunner.manager, 'save').mockResolvedValue(mockCreateUser);
 
       const result = await userService.createUser(mockCreateUser);
 
       expect(queryRunner.manager.save).toHaveBeenCalledTimes(1);
-
-      console.log('result: ', result);
-
       expect(queryRunner.connect).toHaveBeenCalledTimes(1);
       expect(queryRunner.startTransaction).toHaveBeenCalledTimes(1);
       expect(queryRunner.commitTransaction).toHaveBeenCalledTimes(1);
@@ -100,6 +96,38 @@ describe('UserService', () => {
       expect(queryRunner.release).toHaveBeenCalledTimes(1);
 
       expect(result).toEqual({ ok: true });
+    });
+
+    it('유저 생성 시 이미 존재하는 email로 생성 시도 시 error message 발생', async () => {
+      userRepository.findOne.mockResolvedValue('test@test.com');
+
+      const mockCreateUser: CreateUserInput = {
+        email: 'test@test.com',
+        username: 'tester',
+        password: 'test1234',
+      };
+      const queryRunner = dataSource.createQueryRunner();
+
+      jest
+        .spyOn(queryRunner.manager, 'create')
+        .mockReturnValue([mockCreateUser]);
+      jest.spyOn(queryRunner.manager, 'save').mockResolvedValue(mockCreateUser);
+
+      const result = await userService.createUser(mockCreateUser);
+
+      console.log('result111: ', result);
+
+      expect(queryRunner.manager.save).toHaveBeenCalledTimes(0);
+      expect(queryRunner.connect).toHaveBeenCalledTimes(1);
+      expect(queryRunner.startTransaction).toHaveBeenCalledTimes(1);
+      expect(queryRunner.commitTransaction).toHaveBeenCalledTimes(0);
+      expect(queryRunner.rollbackTransaction).toHaveBeenCalledTimes(0);
+      expect(queryRunner.release).toHaveBeenCalledTimes(1);
+
+      expect(result).toEqual({
+        ok: false,
+        error: '다른 이메일로 시도해주세요.',
+      });
     });
   });
 });
