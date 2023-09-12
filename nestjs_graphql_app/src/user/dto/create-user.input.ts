@@ -1,7 +1,9 @@
-import { InputType, Int, Field } from '@nestjs/graphql';
+import { InputType, PartialType, ObjectType } from '@nestjs/graphql';
+import { User } from '../entities/user.entity';
+import { BaseOutput } from 'src/common/base-output.dto';
 
 @InputType()
-export class CreateUserInput {
-  @Field(() => Int, { description: 'Example field (placeholder)' })
-  exampleField: number;
-}
+export class CreateUserInput extends PartialType(User) {}
+
+@ObjectType()
+export class CreateUserOutput extends BaseOutput {}
