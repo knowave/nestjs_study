@@ -115,8 +115,6 @@ describe('UserService', () => {
 
       const result = await userService.createUser(mockCreateUser);
 
-      console.log('result111: ', result);
-
       expect(queryRunner.manager.save).toHaveBeenCalledTimes(0);
       expect(queryRunner.connect).toHaveBeenCalledTimes(1);
       expect(queryRunner.startTransaction).toHaveBeenCalledTimes(1);
