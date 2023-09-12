@@ -128,4 +128,26 @@ describe('UserService', () => {
       });
     });
   });
+
+  describe('getUserById', () => {
+    it('유저가 존재하면 true를 반환한다.', async () => {
+      const mockUser = {
+        id: 1,
+        username: 'tester',
+      };
+
+      userRepository.findOne.mockResolvedValue(mockUser);
+      const result = await userService.getUserById({ userId: 1 });
+      expect(result).toEqual({ ok: true, user: { id: 1, username: 'tester' } });
+    });
+
+    it('유저가 존재하지 않으면 false와 함께 error message를 반환한다.', async () => {
+      userRepository.findOne.mockResolvedValue(null);
+      const result = await userService.getUserById({ userId: 1 });
+      expect(result).toEqual({
+        ok: false,
+        error: '존재하지 않는 사용자입니다.',
+      });
+    });
+  });
 });
