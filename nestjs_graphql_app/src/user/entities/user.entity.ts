@@ -1,4 +1,5 @@
 import { Field, InputType, ObjectType } from '@nestjs/graphql';
+import { IsEmail, IsString, Length, Matches } from 'class-validator';
 import { BaseEntity } from 'src/common/entities/base.entity';
 import { Feed } from 'src/feed/entities/feed.entity';
 import { Follow } from 'src/follow/entities/follow.entity';
@@ -11,14 +12,21 @@ import { Column, Entity, JoinColumn, OneToMany, OneToOne } from 'typeorm';
 @Entity()
 export class User extends BaseEntity {
   @Field(() => String, { nullable: true })
+  @IsEmail({}, { message: '잘못된 이메일 형식입니다.' })
   @Column({ nullable: true })
   email?: string;
 
   @Field(() => String, { nullable: true })
+  @IsString()
   @Column({ nullable: true })
   username?: string;
 
   @Field(() => String, { nullable: true })
+  @IsString()
+  @Length(8, 20, { message: '비밀번호는 최소 8에서 최대 20자이어야 합니다.' })
+  @Matches(/^(?=.*[!@#$%^&*])/gm, {
+    message: '비밀번호에는 특수문자 최소 1개가 포함되어야 합니다.',
+  })
   @Column({ nullable: true })
   password?: string;
 
