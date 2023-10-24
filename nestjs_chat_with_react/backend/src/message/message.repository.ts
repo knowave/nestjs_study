@@ -30,12 +30,15 @@ export class MessageRepository extends Repository<Message> {
     }
   }
 
-  async sendMessage(sendMessageDto: SendMessageDto): Promise<Message> {
+  async sendMessage({
+    sender,
+    receiver,
+    content,
+  }: SendMessageDto): Promise<Message> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-      const { sender, receiver, content } = sendMessageDto;
       const createMessage = queryRunner.manager.create(Message, {
         sender,
         receiver,
