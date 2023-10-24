@@ -12,18 +12,24 @@ export class Message {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
-  content: string;
+  @Column({ nullable: true })
+  content?: string;
 
-  @Column({ default: false })
-  read: boolean;
+  @Column({ default: false, nullable: true })
+  read?: boolean;
 
   @CreateDateColumn()
   sentAt: Date;
 
-  @ManyToOne(() => User, (user) => user.sentMessages)
-  sender: User;
+  @ManyToOne(() => User, (user) => user.sentMessages, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  sender?: User;
 
-  @ManyToOne(() => User, (user) => user.receivedMessage)
-  receiver: User;
+  @ManyToOne(() => User, (user) => user.receivedMessage, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  receiver?: User;
 }
