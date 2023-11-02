@@ -1095,6 +1095,14 @@
     "@types/passport" "*"
     "@types/passport-strategy" "*"
 
+"@types/passport-naver@^1.0.3":
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/@types/passport-naver/-/passport-naver-1.0.3.tgz#4e6080f7caa0d5602cd1f8078d6d0a1a8cda8962"
+  integrity sha512-n3OK5KfkKXEN42QVfyW5kPQXyt/ca9DZ+gAeMKR9UBiBEDk7Pahv+OxadwyHbJKSyOjmaJD2YDDEigkPZGJBzQ==
+  dependencies:
+    "@types/express" "*"
+    "@types/passport" "*"
+
 "@types/passport-strategy@*":
   version "0.2.37"
   resolved "https://registry.yarnpkg.com/@types/passport-strategy/-/passport-strategy-0.2.37.tgz#c1f2bc6c24c79a22ddd4693904b544837908a9eb"
