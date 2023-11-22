@@ -31,3 +31,10 @@ export const AUTH_EXCEPTION = {
     message: '잘못된 경로입니다.',
   },
 };
+
+export const JWT_EXCEPTION = {
+  JWT_NOT_REISSUED: {
+    code: 'JWT_NOT_REISSUED',
+    message: '재발급을 실패했습니다.',
+  },
+};
