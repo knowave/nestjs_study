@@ -1,7 +1,7 @@
 config:
-  target: 'https://localhost:8080/graphql'
+  target: 'https://localhost:8080'
   phases:
-    - duration: 600
+    - duration: 60
       arrivalRate: 50
 
 scenarios:
@@ -11,9 +11,9 @@ scenarios:
           url: '/'
           json:
             query: |
-              query GetHelloQuery($input: GetHelloInput) {
+              query GetHello($input: GetHelloInput) {
                 getHello(input: $input) {
-                  messages
+                  index
                 }
               }
             variables:
