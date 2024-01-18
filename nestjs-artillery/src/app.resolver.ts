@@ -7,7 +7,9 @@ export class AppResolver {
   constructor(private readonly appService: AppService) {}
 
   @Query(() => GetHelloOutput)
-  getHello(@Args('input') getHelloInput: GetHelloInput): GetHelloOutput {
+  async getHello(
+    @Args('input') getHelloInput: GetHelloInput,
+  ): Promise<GetHelloOutput> {
     return this.appService.getHello(getHelloInput);
   }
 }

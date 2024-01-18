@@ -1,0 +1,21 @@
+config:
+  target: 'https://localhost:8080/graphql'
+  phases:
+    - duration: 600
+      arrivalRate: 50
+
+scenarios:
+  - name: 'loop load test'
+    flow:
+      - post:
+          url: '/'
+          json:
+            query: |
+              query GetHelloQuery($input: GetHelloInput) {
+                getHello(input: $input) {
+                  messages
+                }
+              }
+            variables:
+              input:
+                index: '3'
