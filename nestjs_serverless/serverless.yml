@@ -1,11 +1,11 @@
-service: nest_serverless
+service: serverless-example
 
 plugins:
   - serverless-offline
 
 provider:
   name: aws
-  runtime: nodejs18.x
+  runtime: nodejs14.x
 
 functions:
   main:
@@ -16,4 +16,4 @@ functions:
           path: /
       - http:
           method: ANY
-           path: '{proxy+}'
+          path: '{proxy+}'
