@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ElasticBeanstalkService } from './elastic-beanstalk.service';
 
 @Module({
-  providers: [ElasticBeanstalkService]
+  providers: [ElasticBeanstalkService],
+  exports: [ElasticBeanstalkService],
 })
 export class ElasticBeanstalkModule {}
