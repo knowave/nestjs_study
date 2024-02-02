@@ -1,15 +1,22 @@
-service: serverless-example
+service: aws-lambda
 
 plugins:
   - serverless-offline
 
+package:
+  exclude:
+    - node_modules/**
+  individually: true
+  minify: false
+
 provider:
   name: aws
-  runtime: nodejs14.x
+  region: ap-northeast-2
+  runtime: nodejs18.x
 
 functions:
   main:
-    handler: dist/main.handler
+    handler: dist/lambda.handler
     events:
       - http:
           method: ANY
