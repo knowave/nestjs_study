@@ -22,10 +22,13 @@
   "dependencies": {
     "@codegenie/serverless-express": "^4.13.0",
     "@nestjs/common": "^10.0.0",
+    "@nestjs/config": "^3.1.1",
     "@nestjs/core": "^10.0.0",
     "@nestjs/platform-express": "^10.0.0",
     "aws-lambda": "^1.0.7",
+    "aws-sdk": "^2.1549.0",
     "aws-serverless-express": "^3.4.0",
+    "aws-serverless-fastify": "^3.0.6",
     "global": "^4.4.0",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.1",
