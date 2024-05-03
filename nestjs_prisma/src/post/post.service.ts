@@ -4,6 +4,7 @@ import { CreatePostDto } from './dto/create-post.dto';
 import { UserService } from 'src/user/user.service';
 import { NOT_FOUND_USER } from 'src/user/error/user.error';
 import { UpdatePostDto } from './dto/update-post.dto';
+import { NOT_FOUND_POST } from './error/post.error';
 
 @Injectable()
 export class PostService {
@@ -41,5 +42,17 @@ export class PostService {
 
   async publishedPosts(page: number, take: number) {
     return await this.postRepository.getPublishedPosts(page, take);
+  }
+
+  async nonPublishedPost(id: number, authorId: number) {
+    const post =
+      await this.postRepository.getPostByIdAndAuthorIdAndPublishedFalse(
+        id,
+        authorId,
+      );
+
+    if (!post) throw new NotFoundException(NOT_FOUND_POST);
+
+    return post;
   }
 }

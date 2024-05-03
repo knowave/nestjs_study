@@ -27,10 +27,26 @@ export class PostRepository {
     const count = await this.prisma.post.count({ where: { published: true } });
     const posts = await this.prisma.post.findMany({
       where: { published: true },
+      include: {
+        author: {
+          select: { name: true, email: true },
+        },
+      },
       take,
       skip: (page - 1) * take,
     });
 
     return { posts, count };
+  }
+
+  async getPostByIdAndAuthorIdAndPublishedFalse(id: number, authorId: number) {
+    return await this.prisma.post.findUnique({
+      where: { id, published: false, authorId },
+      include: {
+        author: {
+          select: { name: true, email: true },
+        },
+      },
+    });
   }
 }
