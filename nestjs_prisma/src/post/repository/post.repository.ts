@@ -49,4 +49,15 @@ export class PostRepository {
       },
     });
   }
+
+  async getPublishedPostById(id: number) {
+    return await this.prisma.post.findUnique({
+      where: { id, published: true },
+      include: {
+        author: {
+          select: { name: true, email: true },
+        },
+      },
+    });
+  }
 }

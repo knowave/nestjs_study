@@ -48,4 +48,10 @@ export class PostController {
   async nonPublishedPost(@Param('id') id: number, @CurrentUser() user: User) {
     return this.postService.nonPublishedPost(+id, user.id);
   }
+
+  @Get('/published/:id')
+  @Public()
+  async post(@Param('id') id: number) {
+    return this.postService.post(+id);
+  }
 }

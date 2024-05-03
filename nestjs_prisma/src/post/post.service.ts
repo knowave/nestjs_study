@@ -55,4 +55,12 @@ export class PostService {
 
     return post;
   }
+
+  async post(id: number) {
+    const post = await this.postRepository.getPublishedPostById(id);
+
+    if (!post) throw new NotFoundException(NOT_FOUND_POST);
+
+    return post;
+  }
 }
