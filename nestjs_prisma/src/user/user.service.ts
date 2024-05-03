@@ -28,7 +28,7 @@ export class UserService {
   }
 
   private async hashPassword(password: string): Promise<string> {
-    return await bcrypt.hash(password, process.env.SALT_ROUNDS);
+    return await bcrypt.hash(password, 10);
   }
 
   async user(userId: number): Promise<UserDto> {
