@@ -10,6 +10,8 @@ import { AuthModule } from './auth/auth.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: `.env`,
+      ignoreEnvFile: process.env.NODE_ENV === 'prod',
     }),
     PrismaModule,
     UserModule,
