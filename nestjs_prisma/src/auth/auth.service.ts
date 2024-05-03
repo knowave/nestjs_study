@@ -11,7 +11,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  createAccessToken(userId: string) {
+  createAccessToken(userId: number) {
     const payload = { userId };
     return this.jwtService.sign(payload, {
       secret: process.env.JWT_ACCESS_TOKEN_SECRET,
@@ -19,7 +19,7 @@ export class AuthService {
     });
   }
 
-  createRefreshToken(userId: string) {
+  createRefreshToken(userId: number) {
     const payload = { userId };
     return this.jwtService.sign(payload, {
       secret: process.env.JWT_REFRESH_TOKEN_SECRET,
