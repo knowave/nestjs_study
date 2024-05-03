@@ -18,6 +18,7 @@ export class AuthController {
     return this.userService.createUser(createUserDto);
   }
 
+  @Post('signin')
   async signIn(@CurrentUser() user: User): Promise<LoginResponseDto> {
     const accessToken = this.authService.createAccessToken(user.id);
     const refreshToken = this.authService.createRefreshToken(user.id);
