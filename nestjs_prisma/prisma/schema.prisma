@@ -8,15 +8,16 @@ datasource db {
 }
 
 model User {
-  id       Int      @id @default(autoincrement())
-  email     String   @unique
-  name      String?
-  password  String?
-  posts     Post[]
-  profile   Profile?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deletedAt DateTime?
+  id            Int      @id @default(autoincrement())
+  email         String   @unique
+  name          String?
+  password      String?
+  refreshToken  String?
+  posts         Post[]
+  profile       Profile?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
 }
 
 model Post {
