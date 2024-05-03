@@ -5,6 +5,7 @@ import { UserService } from 'src/user/user.service';
 import { NOT_FOUND_USER } from 'src/user/error/user.error';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { NOT_FOUND_POST } from './error/post.error';
+import { NonPublishedPosts } from './dto/non-published-posts.dto';
 
 @Injectable()
 export class PostService {
@@ -62,5 +63,11 @@ export class PostService {
     if (!post) throw new NotFoundException(NOT_FOUND_POST);
 
     return post;
+  }
+
+  async nonPublishedPosts(nonPublishedPosts: NonPublishedPosts) {
+    await this.postRepository.getPostsByIdAndAuthorIdAndPublishedFalse(
+      nonPublishedPosts,
+    );
   }
 }

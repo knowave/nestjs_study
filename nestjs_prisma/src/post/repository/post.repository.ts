@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { CreatePostDto } from '../dto/create-post.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UpdatePostDto } from '../dto/update-post.dto';
+import { NonPublishedPosts } from '../dto/non-published-posts.dto';
 
 @Injectable()
 export class PostRepository {
@@ -59,5 +60,28 @@ export class PostRepository {
         },
       },
     });
+  }
+
+  async getPostsByIdAndAuthorIdAndPublishedFalse(
+    nonPublishedPosts: NonPublishedPosts,
+  ) {
+    const { page, take, authorId } = nonPublishedPosts;
+
+    const posts = await this.prisma.post.findMany({
+      where: { published: false, authorId },
+      include: {
+        author: {
+          select: { name: true, email: true },
+        },
+      },
+      take,
+      skip: (page - 1) * take,
+    });
+
+    const count = await this.prisma.post.count({
+      where: { published: false, authorId },
+    });
+
+    return { posts, count };
   }
 }

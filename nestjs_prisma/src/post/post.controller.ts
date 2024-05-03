@@ -44,9 +44,22 @@ export class PostController {
     return await this.postService.publishedPosts(+page, +take);
   }
 
-  @Get('/:id')
+  @Get('/non-published/:id')
   async nonPublishedPost(@Param('id') id: number, @CurrentUser() user: User) {
     return this.postService.nonPublishedPost(+id, user.id);
+  }
+
+  @Get('/non-published')
+  async nonPublishedPosts(
+    @Query('page') page: number,
+    @Query('take') take: number,
+    @CurrentUser() user: User,
+  ) {
+    return this.postService.nonPublishedPosts({
+      page: +page,
+      take: +take,
+      authorId: user.id,
+    });
   }
 
   @Get('/published/:id')
