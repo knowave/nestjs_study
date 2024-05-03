@@ -58,4 +58,15 @@ export class UserRepository {
       },
     });
   }
+
+  async updateRefreshToken(refreshToken: string, id: number): Promise<User> {
+    return this.prisma.user.update({
+      where: {
+        id,
+      },
+      data: {
+        refreshToken,
+      },
+    });
+  }
 }

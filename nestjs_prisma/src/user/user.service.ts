@@ -45,4 +45,8 @@ export class UserService {
       throw new BadRequestException('유효하지 않는 토큰입니다.');
     }
   }
+
+  async setCurrentRefreshToken(refreshToken: string, userId: number) {
+    return await this.userRepository.updateRefreshToken(refreshToken, userId);
+  }
 }

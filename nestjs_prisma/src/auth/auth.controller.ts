@@ -22,7 +22,7 @@ export class AuthController {
     const accessToken = this.authService.createAccessToken(user.id);
     const refreshToken = this.authService.createRefreshToken(user.id);
 
-    await this.usersService.setCurrentRefreshToken(refreshToken, user.id);
+    await this.userService.setCurrentRefreshToken(refreshToken, user.id);
 
     return { accessToken, refreshToken };
   }
