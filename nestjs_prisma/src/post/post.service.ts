@@ -1,4 +1,26 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PostRepository } from './repository/post.repository';
+import { CreatePostDto } from './dto/create-post.dto';
+import { UserService } from 'src/user/user.service';
+import { NOT_FOUND_USER } from 'src/user/error/user.error';
 
 @Injectable()
-export class PostService {}
+export class PostService {
+  constructor(
+    private readonly postRepository: PostRepository,
+    private readonly userService: UserService,
+  ) {}
+
+  async createPost(
+    createPostDto: CreatePostDto,
+    authorId: number,
+  ): Promise<boolean> {
+    const user = await this.userService.user(authorId);
+
+    if (!user) throw new NotFoundException(NOT_FOUND_USER);
+
+    await this.postRepository.save(createPostDto, authorId);
+
+    return true;
+  }
+}
