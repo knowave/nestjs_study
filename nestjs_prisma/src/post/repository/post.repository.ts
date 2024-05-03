@@ -24,10 +24,13 @@ export class PostRepository {
   }
 
   async getPublishedPosts(page: number, take: number) {
-    return await this.prisma.post.findMany({
+    const count = await this.prisma.post.count({ where: { published: true } });
+    const posts = await this.prisma.post.findMany({
       where: { published: true },
       take,
       skip: (page - 1) * take,
     });
+
+    return { posts, count };
   }
 }

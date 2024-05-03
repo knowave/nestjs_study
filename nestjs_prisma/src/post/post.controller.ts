@@ -40,7 +40,7 @@ export class PostController {
   async publishedPosts(
     @Query('page') page: number,
     @Query('take') take: number,
-  ): Promise<any> {
+  ) {
     return await this.postService.publishedPosts(+page, +take);
   }
 }
