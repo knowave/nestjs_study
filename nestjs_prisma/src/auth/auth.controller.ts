@@ -2,7 +2,6 @@ import { Body, Controller, Post } from '@nestjs/common';
 import { User } from '@prisma/client';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { UserService } from 'src/user/user.service';
-import { CurrentUser } from './decorators/current-user.decorator';
 import { LoginResponseDto } from './dto/login-response.dto';
 import { AuthService } from './auth.service';
 import { Public } from './decorators/is-public.decorator';
