@@ -19,4 +19,10 @@ export class ProfileRepository {
       },
     });
   }
+
+  async save(data: any) {
+    return this.prisma.profile.create({
+      data,
+    });
+  }
 }
