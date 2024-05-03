@@ -25,4 +25,14 @@ export class ProfileRepository {
       data,
     });
   }
+
+  // bio 수정
+  async updateProfile(userId: number, data: any) {
+    return this.prisma.profile.update({
+      where: {
+        userId,
+      },
+      data,
+    });
+  }
 }
