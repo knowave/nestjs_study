@@ -1,9 +1,18 @@
-import { Body, Controller, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { PostService } from './post.service';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { User } from '@prisma/client';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
+import { Public } from 'src/auth/decorators/is-public.decorator';
 
 @Controller('post')
 export class PostController {
@@ -24,5 +33,14 @@ export class PostController {
     @CurrentUser() user: User,
   ): Promise<boolean> {
     return await this.postService.updatePost(updatePostDto, id, user.id);
+  }
+
+  @Get()
+  @Public()
+  async publishedPosts(
+    @Query('page') page: number,
+    @Query('take') take: number,
+  ): Promise<any> {
+    return await this.postService.publishedPosts(+page, +take);
   }
 }

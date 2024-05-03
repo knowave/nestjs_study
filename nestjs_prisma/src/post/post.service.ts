@@ -38,4 +38,8 @@ export class PostService {
 
     return true;
   }
+
+  async publishedPosts(page: number, take: number) {
+    return await this.postRepository.getPublishedPosts(page, take);
+  }
 }

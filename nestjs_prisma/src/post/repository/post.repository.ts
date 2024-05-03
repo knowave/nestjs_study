@@ -8,7 +8,7 @@ export class PostRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async save(createPostDto: CreatePostDto, authorId: number) {
-    return this.prisma.post.create({
+    return await this.prisma.post.create({
       data: {
         ...createPostDto,
         authorId,
@@ -17,9 +17,17 @@ export class PostRepository {
   }
 
   async update(updatePostDto: UpdatePostDto, id: number, authorId: number) {
-    return this.prisma.post.update({
+    return await this.prisma.post.update({
       where: { id, authorId },
       data: updatePostDto,
+    });
+  }
+
+  async getPublishedPosts(page: number, take: number) {
+    return await this.prisma.post.findMany({
+      where: { published: true },
+      take,
+      skip: (page - 1) * take,
     });
   }
 }
