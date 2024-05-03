@@ -5,6 +5,8 @@ import { UserService } from 'src/user/user.service';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { LoginResponseDto } from './dto/login-response.dto';
 import { AuthService } from './auth.service';
+import { Public } from './decorators/is-public.decorator';
+import { SignInDto } from './dto/sign-in.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -14,17 +16,14 @@ export class AuthController {
   ) {}
 
   @Post('signup')
+  @Public()
   async signUp(@Body() createUserDto: CreateUserDto): Promise<User> {
     return this.userService.createUser(createUserDto);
   }
 
   @Post('signin')
-  async signIn(@CurrentUser() user: User): Promise<LoginResponseDto> {
-    const accessToken = this.authService.createAccessToken(user.id);
-    const refreshToken = this.authService.createRefreshToken(user.id);
-
-    await this.userService.setCurrentRefreshToken(refreshToken, user.id);
-
-    return { accessToken, refreshToken };
+  @Public()
+  async signIn(@Body() signInDto: SignInDto): Promise<LoginResponseDto> {
+    return this.authService.signIn(signInDto);
   }
 }
