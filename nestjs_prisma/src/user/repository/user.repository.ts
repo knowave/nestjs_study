@@ -24,6 +24,7 @@ export class UserRepository {
         id: true,
         email: true,
         name: true,
+        refreshToken: true,
         password: false,
         createdAt: true,
         updatedAt: true,

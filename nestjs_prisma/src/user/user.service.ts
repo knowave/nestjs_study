@@ -35,4 +35,14 @@ export class UserService {
     const user = await this.userRepository.getUserById(userId);
     return user;
   }
+
+  async getUserIfRefreshTokenMatches(refreshToken: string, userId: number) {
+    const user = await this.userRepository.getUserById(userId);
+
+    if (refreshToken == user.refreshToken) {
+      return user;
+    } else {
+      throw new BadRequestException('유효하지 않는 토큰입니다.');
+    }
+  }
 }
