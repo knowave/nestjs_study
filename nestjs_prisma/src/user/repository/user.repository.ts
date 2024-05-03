@@ -14,6 +14,14 @@ export class UserRepository {
     });
   }
 
+  async getUserByIdForValidate(id: number): Promise<User> {
+    return this.prisma.user.findUnique({
+      where: {
+        id,
+      },
+    });
+  }
+
   async getUserById(id: number): Promise<UserDto> {
     return this.prisma.user.findUnique({
       where: {
