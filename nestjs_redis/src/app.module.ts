@@ -4,6 +4,7 @@ import { CacheModule, CacheInterceptor } from '@nestjs/cache-manager';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { APP_INTERCEPTOR } from '@nestjs/core';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
       port: 6369,
       ttl: 100000,
     }),
+    UserModule,
   ],
   controllers: [AppController],
   providers: [
