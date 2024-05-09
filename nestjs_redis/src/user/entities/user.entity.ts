@@ -10,4 +10,8 @@ export class User {
 
   @Column()
   followCount: number;
+
+  constructor(data: any) {
+    Object.assign(this, data);
+  }
 }
