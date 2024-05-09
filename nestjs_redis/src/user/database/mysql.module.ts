@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { DB_HOST, DB_NAME, DB_PASSWORD, DB_USER } from 'env';
+import { DB_HOST, DB_USER, DB_PASSWORD, DB_DATABASE } from 'env';
 
 @Module({
   imports: [
@@ -11,8 +11,9 @@ import { DB_HOST, DB_NAME, DB_PASSWORD, DB_USER } from 'env';
         port: 3306,
         username: DB_USER,
         password: DB_PASSWORD,
-        database: DB_NAME,
-        entities: ['../../**/entities/*.entity{.ts,.js}'],
+        database: DB_DATABASE,
+        entities: [__dirname + '../../**/entities/**.entity{.ts,.js}'],
+        migrations: [__dirname + '/migrations/*.ts'],
         synchronize: true,
       }),
     }),
