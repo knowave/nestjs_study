@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { UserModule } from './user/user.module';
+import { MysqlModule } from './user/database/mysql.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { UserModule } from './user/user.module';
       ttl: 100000,
     }),
     UserModule,
+    MysqlModule,
   ],
   controllers: [AppController],
   providers: [
