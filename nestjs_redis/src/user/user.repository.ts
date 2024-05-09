@@ -12,7 +12,7 @@ export class UserRepository extends Repository<User> {
     return await this.save(user);
   }
 
-  async BulkSave(users: User[]): Promise<User[]> {
+  async bulkSave(users: User[]): Promise<User[]> {
     return await this.save(users);
   }
 
