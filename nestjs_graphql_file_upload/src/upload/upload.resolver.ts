@@ -1,5 +1,6 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { UploadService } from './upload.service';
+import { UploadInput } from './dto/upload.input';
 
 @Resolver()
 export class UploadResolver {
@@ -11,7 +12,10 @@ export class UploadResolver {
   }
 
   @Mutation(() => Boolean)
-  async uploadFile(@Args('string') string: string): Promise<string> {
-    return this.uploadService.uploadFile(string);
+  async uploadFile(
+    @Args('input', { type: () => UploadInput })
+    uploadInput: UploadInput,
+  ): Promise<string> {
+    return this.uploadService.uploadFile(uploadInput);
   }
 }
