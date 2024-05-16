@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { S3 } from 'aws-sdk';
+import { PutObjectDto } from './dto/put-object.dto';
 
 @Injectable()
 export class S3Service {
@@ -15,5 +16,21 @@ export class S3Service {
       },
       region: process.env.AWS_REGION,
     });
+  }
+
+  async putObject(
+    putObjectDto: PutObjectDto,
+  ): Promise<S3.Types.PutObjectOutput> {
+    const { key, body, contentType, bucket } = putObjectDto;
+
+    return await this.s3
+      .putObject({
+        Key: key,
+        Body: body,
+        Bucket: bucket || this.bucketName,
+        ACL: 'public-read',
+        ...(contentType && { ContentType: contentType }),
+      })
+      .promise();
   }
 }
