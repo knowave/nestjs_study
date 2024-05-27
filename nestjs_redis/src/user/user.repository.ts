@@ -22,6 +22,7 @@ export class UserRepository {
     return await this.repository
       .createQueryBuilder('user')
       .orderBy('user.followCount', 'DESC')
+      .addOrderBy('user.username', 'ASC')
       .limit(10)
       .getMany();
   }
