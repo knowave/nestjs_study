@@ -1,0 +1,25 @@
+export interface PdfParseBomInterface {
+  type: 'fabric' | 'accessory';
+  product?: string | null;
+  composition?: string | null;
+  size?: string | null;
+  qty?: string | null;
+  placement?: string | null;
+  supplierQuote?: string | null;
+  supplierCode?: string | null;
+  mossMos?: string | null;
+  black?: string | null;
+  navy?: string | null;
+  royalBlue?: string | null;
+  livingCoral?: string | null;
+  chalkPink?: string | null;
+  teal?: string | null;
+  lochmara?: string | null;
+  spindle?: string | null;
+  bittersweet?: string | null;
+  warmBrown?: string | null;
+  caribbeanBlue?: string | null;
+  ginFizz?: string | null;
+  tempranillo?: string | null;
+  graphite?: string | null;
+}

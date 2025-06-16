@@ -1,133 +1,118 @@
 import { Injectable } from '@nestjs/common';
 import { PDFExtract } from 'pdf.js-extract';
-
-export interface ParsedBOMRow {
-  type: 'fabric' | 'accessory';
-  reference: string;
-  detail: string;
-  composition?: string;
-  qty?: string;
-  placement?: string;
-  supplier?: string;
-  supplierCode?: string;
-  size?: string;
-}
+import { PdfParseBomInterface } from './interfaces/pdf-parse-bom.interface';
 
 @Injectable()
 export class AppService {
   async pdfParse(file: Express.Multer.File) {
+    // let currentType: 'fabric' | 'accessory' | null = null;
+    const results: PdfParseBomInterface[] = [];
+
     const buffer = file.buffer;
     const pdfExtracted = new PDFExtract();
     const result = await pdfExtracted.extractBuffer(buffer, {});
-    const pages = result.pages.slice(8);
-    const rows: ParsedBOMRow[] = [];
-    const headersByPage: Record<number, { x: number; headerName: string }[]> =
-      [];
-    let currentSelection: 'fabric' | 'accessory' | null = null;
+    const pages = result.pages.slice(8); // 9페이지부터 Parsing.
 
-    pages.forEach((page, idx) => {
+    pages.forEach((page) => {
       const content = page.content.filter((item) => item.str.trim() !== '');
-      const pageNumber = idx + 9;
-
-      // check if current selection is not null
-      const section = content.find((item) => {
-        const text = item.str.trim().toLowerCase();
-        return (
-          text.includes('fabric') || text.includes('artWork') || 'accessory'
-        );
-      });
-
-      if (section) {
-        const text = section.str.trim().toLowerCase();
-        if (text.includes('fabric')) currentSelection = 'fabric';
-        else if (text.includes('artwork')) currentSelection = null;
-        else currentSelection = 'accessory';
-      }
-
-      if (!currentSelection) return;
-
       const productHeader = content.find(
         (item) => item.str.trim().toLowerCase() === 'product',
       );
 
       if (!productHeader) return;
 
-      const productHeaderY = productHeader.y;
-      const headers = content
-        .filter((item) => Math.abs(item.y - productHeaderY) < 1)
-        .sort((a, b) => a.x - b.x)
-        .map((item) => ({
-          x: item.x,
-          headerName: item.str.trim(),
+      // header 추출하기 (같은 x에 여러 줄인 경우에 병합)
+      const headerGroupByX = new Map<number, string[]>();
+      const headerLines = content.filter(
+        (item) => item.y >= productHeader.y && item.y < productHeader.y + 10,
+      );
+
+      for (const data of headerLines) {
+        const x = data.x;
+        const prevData = headerGroupByX.get(x) || [];
+        headerGroupByX.set(x, [...prevData, data.str.trim()]);
+      }
+
+      const headers = [...headerGroupByX.entries()]
+        .sort((a, b) => a[0] - b[0])
+        .map(([x, lines]) => ({
+          x,
+          headerName: lines.join(' ').replace(/\s+/g, ' ').trim(),
         }));
 
       const headerXList = headers.map((h) => h.x);
 
-      // y값으로 행 grouping
-      const yGrouped = new Map<number, { x: number; str: string }[]>();
+      const sortedLines = content
+        .filter((i) => i.y > productHeader.y)
+        .sort((a, b) => a.y - b.y);
 
-      for (const item of content.filter((i) => i.y > productHeaderY)) {
-        const yKey = Math.round(item.y * 10) / 10;
-        const list = yGrouped.get(yKey) || [];
+      const rowBuffer: Record<string, string[]> = {};
+      const flushBuffer = () => {
+        if (Object.keys(rowBuffer).length === 0) return;
 
-        list.push({ x: item.x, str: item.str.trim() });
-        yGrouped.set(yKey, list);
-      }
+        const toValue = (key: string) =>
+          rowBuffer[key]
+            ?.map((v) => v.trim())
+            .join(' ')
+            .replace(/\s+/g, ' ')
+            .trim() || null;
 
-      headersByPage[pageNumber] = headers;
+        const result: PdfParseBomInterface = {
+          type: 'fabric',
+          product: toValue('Product'),
+          composition: toValue('Composition'),
+          size: toValue('Size'),
+          qty: toValue('Qty'),
+          placement: toValue('Placement'),
+          supplierQuote: toValue('Supplier Quote'),
+          supplierCode: toValue('Supplier Code'),
+          mossMos: toValue('Moss MOS'),
+          black: toValue('Black BLK'),
+          navy: toValue('Navy NVY'),
+          royalBlue: toValue('Royal Blue RBU'),
+          livingCoral: toValue('Living Coral PK101'),
+          chalkPink: toValue('Chalk Pink BLH'),
+          teal: toValue('Teal TEL'),
+          lochmara: toValue('Lochmara PR067'),
+          spindle: toValue('Spindle BL187'),
+          bittersweet: toValue('Bittersweet RD012'),
+          warmBrown: toValue('Warm Brown BR132'),
+          caribbeanBlue: toValue('Caribbean Blue CRB'),
+          ginFizz: toValue('Gin Fizz PK075'),
+          tempranillo: toValue('Tempranillo RD089'),
+          graphite: toValue('Graphite GPT'),
+        };
+        results.push(result);
+        Object.keys(rowBuffer).forEach((k) => delete rowBuffer[k]);
+      };
 
-      // 행 단위로 데이터 파싱
-      for (const [, cellList] of yGrouped) {
-        const row: Record<string, string[]> = {};
+      for (const line of sortedLines) {
+        let closestX = headerXList[0];
+        let minDiff = Math.abs(line.x - closestX);
 
-        for (const cell of cellList) {
-          // 가장 가까운 x header 찾기
-          let closestX = headerXList[0];
-          let minDiff = Math.abs(cell.x - closestX);
-
-          for (const hx of headerXList) {
-            const diff = Math.abs(cell.x - hx);
-
-            if (diff < minDiff) {
-              closestX = hx;
-              minDiff = diff;
-            }
+        for (const hx of headerXList) {
+          const diff = Math.abs(line.x - hx);
+          if (diff < minDiff) {
+            closestX = hx;
+            minDiff = diff;
           }
-
-          const columnName = headers.find((h) => h.x === closestX)?.headerName;
-          if (!columnName) continue;
-
-          console.log(columnName);
-
-          const prev = row[columnName] || [];
-          row[columnName] = [...prev, cell.str];
         }
 
-        const productCell = row['Product']?.join(' ').trim();
-        if (!productCell) continue;
+        const columnName = headers.find((h) => h.x === closestX)?.headerName;
+        if (!columnName) continue;
 
-        // reference, detail 추출
-        const parts = productCell.split(' ');
-        const reference =
-          parts.find((p) => p.includes('-') && p.length === 10) || '';
-        const detail = productCell.replace(reference, '').trim();
+        // 기준점: Product 컬럼에 code-like 문자열이 등장할 때 새 row 시작
+        if (columnName === 'Product' && line.str.match(/[A-Z]{3}-\d{6}/)) {
+          flushBuffer();
+        }
 
-        if (!reference) continue;
-
-        rows.push({
-          type: currentSelection,
-          reference,
-          detail,
-          composition: row['Composition']?.join(' ').trim(),
-          qty: row['Qty']?.join(' ').trim(),
-          placement: row['Placement']?.join(' ').trim(),
-          supplier: row['Supplier']?.join(' ').trim(),
-          supplierCode: row['Supplier Code']?.join(' ').trim(),
-          size: row['Size']?.join(' ').trim(),
-        });
+        const prev = rowBuffer[columnName] || [];
+        rowBuffer[columnName] = [...prev, line.str.trim()];
       }
+
+      flushBuffer();
     });
-    // console.log(headersByPage);
-    return rows;
+
+    return results;
   }
 }
