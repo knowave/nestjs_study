@@ -14,6 +14,6 @@ export class AppController {
   @UseInterceptors(FileInterceptor('file'))
   @Post('/pdf-parse')
   async pdfParse(@UploadedFile() file: Express.Multer.File) {
-    return await this.appService.pdfParse(file);
+    return this.appService.pdfParse(file);
   }
 }
