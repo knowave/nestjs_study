@@ -35,6 +35,7 @@ export default tseslint.config(
       '@typescript-eslint/prefer-promise-reject-errors': 'off',
       'no-case-declarations': 'off',
       'no-prototype-builtins': 'off',
+      'no-useless-escape': 'off',
     },
   },
 );
