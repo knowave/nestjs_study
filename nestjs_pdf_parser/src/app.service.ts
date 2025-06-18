@@ -20,11 +20,13 @@ export class AppService {
       );
       if (hasSkipKeyword) return;
 
-      const productItem = content.find((c) => c.str.includes('Product'));
+      const productItem = content.find(
+        (c) => c.str.trim().toLowerCase() === 'product',
+      );
       if (!productItem) return;
 
       const headerY = productItem.y;
-      const headerItems = content.filter((c) => Math.abs(c.y - headerY) < 13);
+      const headerItems = content.filter((c) => Math.abs(c.y - headerY) < 20);
 
       const groupByX: { x: number; values: { y: number; str: string }[] }[] =
         [];
@@ -33,7 +35,7 @@ export class AppService {
         .sort((a, b) => a.x - b.x || a.y - b.y)
         .forEach((item) => {
           const found = groupByX.find(
-            (group) => Math.abs(group.x - item.x) < 2,
+            (group) => Math.abs(group.x - item.x) < 15,
           );
 
           if (found) {
@@ -47,40 +49,26 @@ export class AppService {
         });
 
       const headerMap = new Map<number, string>();
+      let stopMapping = false;
 
       groupByX.forEach((group) => {
+        if (stopMapping) return;
+
         const label = group.values
           .sort((a, b) => a.y - b.y)
           .map((v) => v.str)
           .join(' ');
 
         headerMap.set(group.x, label);
+
+        // if (label.toLowerCase() === 'supplier quote') stopMapping = true;
       });
 
-      const contentData = content.filter((c) => c.y > headerY);
-      const rowData = _.values(_.groupBy(contentData, (c) => _.round(c.y, 1)));
+      console.log('headerMap', headerMap);
 
-      rowData.forEach((row) => {
-        const data: Record<string, string | null> = {};
-
-        headerMap.forEach((label, x) => {
-          const cells = row.filter((r) => Math.abs(r.x - x) < 2);
-
-          if (cells.length === 0) {
-            data[_.camelCase(label)] = null;
-          } else {
-            const value = _(cells)
-              .sortBy('y')
-              .map((cell) => cell.str.trim())
-              .join(' ');
-            data[_.camelCase(label)] = value;
-          }
-        });
-
-        results.push({
-          ...data,
-          type: 'fabric',
-        });
+      headerMap.forEach((value, key) => {
+        console.log('value', value);
+        console.log('key', key);
       });
     });
 
