@@ -12,9 +12,23 @@ export class AppService {
       .map((w, i) =>
         i === 0
           ? w.toLowerCase()
-          : w[0].toUpperCase() + w.slice(1).toLowerCase(),
+          : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(),
       )
       .join('');
+  }
+
+  private isTypeMaker(str: string): boolean {
+    const s = str.trim().toLowerCase();
+    const makers = ['fabric', 'thread/fusing', 'trim', 'labels', 'artwork'];
+
+    return makers.some((maker) => {
+      if (!s.startsWith(maker)) return false;
+      const rest = s.slice(maker.length).trim();
+      if (!rest.startsWith('(') || !rest.endsWith(')')) return false;
+      const numStr = rest.substring(1, rest.length - 1).trim();
+      const n = Number(numStr);
+      return Number.isInteger(n) && !Number.isNaN(n);
+    });
   }
 
   async pdfParse(file: Express.Multer.File): Promise<PdfParseBomInterface[]> {
@@ -24,28 +38,70 @@ export class AppService {
 
     const results: PdfParseBomInterface[] = [];
     let lastItem: PdfParseBomInterface | null = null;
-    let currentType: 'fabric' | 'accessory' | null = null;
-
-    // 다섯 개 필수 키
-    const required = [
-      'product',
-      'composition',
-      'qty',
-      'placement',
-      'supplierQuote',
-    ];
 
     for (const page of pages) {
-      const content = page.content.filter((c) => c.str.trim() !== '');
+      // 1) 노이즈 & 빈 문자열 제거
+      const raw = page.content.map((c) => ({ ...c, str: c.str.trim() }));
+      // const content = raw.filter((c) => {
+      //   if (!c.str) return false;
+      //   if (/^Displaying\s+\d+/.test(c.str)) return false;
+      //   return true;
+      // });
 
-      // 1) 헤더 Y 찾기
-      const headerY = content.find(
-        (c) => c.str.trim().toLowerCase() === 'product',
+      const content = raw.filter((c) => {
+        // 1-1) 완전 빈 문자열 제거
+        if (!c.str) return false;
+
+        // 1-2) Displaying n–m of k 같은 페이징 텍스트만 제거
+        if (/^Displaying\s+\d+\s*-\s*\d+\s+of\s+\d+/i.test(c.str)) return false;
+
+        // 1-3) Type Marker(Fabric, Thread/Fusing 등)은 무조건 살린다
+        if (this.isTypeMaker(c.str)) return true;
+
+        return true;
+      });
+
+      // 2) currentType 감지 (Fabric(n), Thread/Fusing(n), Trim(n), Labels(n) …)
+      let currentType: 'fabric' | 'accessory' = 'accessory';
+      const typeMarker = content.find((c) => {
+        console.log(`content string value ${c.str}`);
+        return this.isTypeMaker(c.str);
+      });
+
+      if (typeMarker) {
+        const marker = typeMarker.str.trim();
+        const idx = marker.indexOf('(');
+        const kind =
+          idx > 0
+            ? marker.substring(0, idx).trim().toLowerCase()
+            : marker.toLowerCase();
+
+        currentType = kind === 'fabric' ? 'fabric' : 'accessory';
+
+        // 이 줄을 content에서 제거
+        content.splice(content.indexOf(typeMarker), 1);
+      }
+
+      // typeMarker 라인은 테이블에도 들어가지 않도록 제거
+      const filtered = content.filter((c) => {
+        // isTypeMaker 로 잡힌 marker (Fabric(3), Trim(6), Labels(2), Artwork(1) 등)
+        if (c === typeMarker) return false;
+
+        // Thread/Fusing(n) 하드코딩 제거
+        if (c.str.trim().toLowerCase().startsWith('thread/fusing'))
+          return false;
+
+        return true;
+      });
+
+      // 헤더 Y좌표 찾기 (product 컬럼)
+      const headerY = filtered.find(
+        (c) => c.str.toLowerCase() === 'product',
       )?.y;
       if (headerY == null) continue;
 
-      // 2) 헤더 그룹화 → fieldKeyMap 생성
-      const headerItems = content.filter((c) => Math.abs(c.y - headerY) < 20);
+      // 같은 Y에 있는 텍스트들로 헤더 그룹핑
+      const headerItems = filtered.filter((c) => Math.abs(c.y - headerY) < 20);
       const headerMap = new Map<number, string>();
       headerItems
         .sort((a, b) => a.x - b.x)
@@ -54,97 +110,92 @@ export class AppService {
             (x0) => Math.abs(x0 - c.x) < 15,
           );
           if (!grpX) grpX = c.x;
-          headerMap.set(grpX, (headerMap.get(grpX) ?? '') + ' ' + c.str.trim());
+          headerMap.set(grpX, (headerMap.get(grpX) ?? '') + ' ' + c.str);
         });
 
+      // 헤더 → 필드키 매핑
       const fieldKeyMap = new Map<number, string>();
       for (const [x, label] of headerMap) {
-        const key = label
-          .trim()
-          .toLowerCase()
-          .replace(/ +/g, ' ')
-          .split(' ')
-          .map((w, i) => (i ? w[0].toUpperCase() + w.slice(1) : w))
-          .join('');
+        const key = this.toCamelCase(label);
         fieldKeyMap.set(x, key);
       }
 
-      // 3) 페이지 단위: 다섯 개 모두 존재해야 진행
-      const foundReq = required.filter((k) =>
-        Array.from(fieldKeyMap.values()).includes(k),
-      );
-      if (foundReq.length !== required.length) continue;
+      // 필수 5개 헤더 모두 없으면 스킵
+      const required = [
+        'product',
+        'composition',
+        'qty',
+        'placement',
+        'supplierQuote',
+      ];
 
-      // 4) 테이블 영역 한정
-      const xList = [...fieldKeyMap.keys()];
-      const xMin = Math.min(...xList) - 15;
-      const xMax = Math.max(...xList) + 15;
-      const table = content
+      const present = Array.from(fieldKeyMap.values());
+      if (!required.every((k) => present.includes(k))) {
+        continue;
+      }
+
+      // 테이블 영역 X범위 결정
+      const xs = [...fieldKeyMap.keys()];
+      const xMin = Math.min(...xs) - 15;
+      const xMax = Math.max(...xs) + 15;
+      const table = filtered
         .filter((c) => c.y > headerY && c.x >= xMin && c.x <= xMax)
         .sort((a, b) => a.y - b.y);
 
-      // 5) 행 클러스터링
-      const rows: PDFExtractText[][] = [];
+      // 행 클러스터링 (ΔY<20px)
+      interface Row {
+        cells: PDFExtractText[];
+        yAvg: number;
+      }
+      const rows: Row[] = [];
       for (const cell of table) {
-        const lastRow = rows[rows.length - 1];
-        if (lastRow && Math.abs(cell.y - lastRow[lastRow.length - 1].y) < 20) {
-          lastRow.push(cell);
-        } else {
-          rows.push([cell]);
+        let placed = false;
+        for (const row of rows) {
+          if (Math.abs(cell.y - row.yAvg) < 20) {
+            row.cells.push(cell);
+            row.yAvg =
+              (row.yAvg * (row.cells.length - 1) + cell.y) / row.cells.length;
+            placed = true;
+            break;
+          }
+        }
+        if (!placed) {
+          rows.push({ cells: [cell], yAvg: cell.y });
         }
       }
 
-      // 6) 각 행 처리
+      // 각 행마다 셀 → 컬럼 매핑
       for (const row of rows) {
-        // 6-1) Fabric/Trim 섹션 헤더 감지
-        const section = row
-          .map((c) => c.str.trim())
-          .find((s) => /^\s*(fabric|artwork)\s*\(\d+\)/i.test(s));
-        if (section) {
-          currentType = section.toLowerCase().startsWith('fabric')
-            ? 'fabric'
-            : 'accessory';
-          continue;
-        }
-
-        // 6-2) 셀 → 컬럼 매핑
         const cellMap = new Map<string, string[]>();
-        for (const item of row) {
+        for (const item of row.cells) {
           let bestX: number | null = null;
           let bestDiff = Infinity;
-          for (const x of xList) {
+          for (const x of xs) {
             const diff = Math.abs(item.x - x);
-            // placement만 허용 오차 크게
-            const tol = fieldKeyMap.get(x) === 'placement' ? 60 : 15;
+            const col = fieldKeyMap.get(x)!;
+
+            // placement는 줄바꿈이 다른 컬럼보다 많기 때문에 placement만 범위 넓게, 나머진 15px
+            const tol = col === 'placement' ? 60 : 15;
             if (diff < tol && diff < bestDiff) {
               bestDiff = diff;
               bestX = x;
             }
           }
-          if (!bestX) continue;
-          const key = fieldKeyMap.get(bestX)!;
-          const arr = cellMap.get(key) ?? [];
-          arr.push(item.str.trim());
-          cellMap.set(key, arr);
+
+          if (bestX == null) continue;
+          const col = fieldKeyMap.get(bestX)!;
+          const arr = cellMap.get(col) ?? [];
+          arr.push(item.str);
+          cellMap.set(col, arr);
         }
 
-        // 6-3) 행 단위: 다섯 개 필수 컬럼 **모두** 없는 행은 건너뜀
-        const hasAllRequired = required.every((k) => cellMap.has(k));
-        if (!hasAllRequired) continue;
-
-        // 6-4) only placement 라인 (product 없는 추가 줄)은 이전에 붙이기
-        const onlyPlacement =
-          !cellMap.has('product') && cellMap.has('placement');
-        if (onlyPlacement && lastItem) {
-          lastItem.placement =
-            (lastItem.placement ?? '') +
-            ' ' +
-            cellMap.get('placement')!.join(' ');
+        // product 열이 없고 placement만 있으면 이전 레코드에 합쳐 붙임
+        if (!cellMap.has('product') && cellMap.has('placement') && lastItem) {
+          lastItem.placement += ' ' + cellMap.get('placement')!.join(' ');
           continue;
         }
 
-        // 6-5) 객체 초기화
-        const obj: any = {
+        const obj: PdfParseBomInterface = {
           type: currentType,
           product: null,
           composition: null,
@@ -153,6 +204,8 @@ export class AppService {
           placement: null,
           supplierQuote: null,
           supplierCode: null,
+
+          // 컬러
           mossMos: null,
           blackBlk: null,
           navyNvy: null,
@@ -171,10 +224,9 @@ export class AppService {
           graphiteGpt: null,
         };
 
-        // 6-6) cellMap → obj
-        for (const [key, arr] of cellMap) {
+        for (const [col, arr] of cellMap.entries()) {
           const text = arr.join(' ');
-          switch (key) {
+          switch (col) {
             case 'product':
               obj.product = text;
               break;
@@ -193,22 +245,21 @@ export class AppService {
             case 'size':
               obj.size = text;
               break;
-            case 'qty': {
+            case 'qty':
               const n = parseFloat(text.replace(/[^\d.]/g, ''));
               obj.qty = isNaN(n) ? null : n;
               break;
-            }
             default:
-              if (Object.prototype.hasOwnProperty.call(obj, key))
-                obj[key] = text;
+              if (obj.hasOwnProperty(col)) {
+                obj[col] = text;
+              }
           }
         }
 
-        // 6-7) product가 없으면 건너뜀
-        if (!obj.product) continue;
-
-        results.push(obj as PdfParseBomInterface);
-        lastItem = obj;
+        if (obj.product !== null && obj.supplierQuote != null) {
+          results.push(obj);
+          lastItem = obj;
+        }
       }
     }
 
