@@ -1,6 +1,6 @@
 // src/app.service.ts
 import { Injectable } from '@nestjs/common';
-import { PDFExtract } from 'pdf.js-extract';
+import { PDFExtract, PDFExtractText } from 'pdf.js-extract';
 import { PdfParseBomInterface } from './interfaces/pdf-parse-bom.interface';
 import { PdfParsingType } from './types/pdf-parsing.type';
 import { Row } from './interfaces/row.interface';
@@ -22,7 +22,6 @@ export class AppService {
     pages.forEach((page) => {
       let currentType: PdfParsingType = 'accessory';
       let lastItem: PdfParseBomInterface | null = null;
-      const rows: Row[] = [];
 
       const raw = page.content.map((c) => ({ ...c, str: c.str.trim() })); // 빈 문자열 제거.
       const content = raw.filter((c) => {
@@ -68,25 +67,10 @@ export class AppService {
       if (!productYCondition) return;
 
       // 같은 Y 좌표에 존재하는 text들로 header grouping.
-      const headerItems = filtered.filter(
+      const headerItems: PDFExtractText[] = filtered.filter(
         (c) => Math.abs(c.y - productYCondition) < 20,
       );
-      const headerMap = new Map<number, string>();
-
-      headerItems
-        .sort((a, b) => a.x - b.x)
-        .forEach((c) => {
-          let groupByX = [...headerMap.keys()].find(
-            (x0) => Math.abs(x0 - c.x) < 15,
-          );
-
-          if (!groupByX) groupByX = c.x;
-
-          headerMap.set(
-            groupByX,
-            (headerMap.get(groupByX) ?? '') + ' ' + c.str,
-          );
-        });
+      const headerMap = this.mappingHeaderMap(headerItems);
 
       // header를 field key 매핑
       const fieldKeyMap = new Map<number, string>();
@@ -117,22 +101,7 @@ export class AppService {
       const table = filtered.filter(
         (c) => c.y > productYCondition && c.x > minX && c.x <= maxX,
       );
-
-      for (const cell of table) {
-        let places = false;
-
-        for (const row of rows) {
-          if (Math.abs(cell.y - row.yAvg) < 20) {
-            row.cells.push(cell);
-            row.yAvg =
-              (row.yAvg * (row.cells.length - 1) + cell.y) / row.cells.length;
-            places = true;
-            break;
-          }
-        }
-
-        if (!places) rows.push({ cells: [cell], yAvg: cell.y });
-      }
+      const rows = this.mappingRows(table);
 
       // 각 행별로 행과 컬럼 매핑
       for (const row of rows) {
@@ -165,74 +134,17 @@ export class AppService {
         }
 
         if (!cellMap.has('product') && cellMap.has('placement') && lastItem) {
-          lastItem.placement += ' ' + cellMap.get('placement')?.join(' ');
+          lastItem.placement +=
+            ' ' + (cellMap.get('placement') ?? []).join(' ');
           continue;
         }
 
-        const object: PdfParseBomInterface = {
-          type: currentType,
-          product: '',
-          composition: '',
-          placement: '',
-          supplierQuote: '',
-          supplierCode: null,
-
-          // 컬러
-          mossMos: null,
-          blackBlk: null,
-          navyNvy: null,
-          mauveMau: null,
-          royalBlueRbu: null,
-          livingCoralPk101: null,
-          chalkPinkBlh: null,
-          tealTel: null,
-          lochmaraPr067: null,
-          spindleBl187: null,
-          bittersweetRd012: null,
-          warmBrownBr132: null,
-          caribbeanBlueCrb: null,
-          ginFizzPk075: null,
-          tempranilloRd089: null,
-          graphiteGpt: null,
-        };
-
-        for (const [col, arr] of cellMap.entries()) {
-          const text = arr.join(' ');
-
-          switch (col) {
-            case 'product':
-              object.product = text;
-              break;
-            case 'composition':
-              object.composition = text;
-              break;
-            case 'placement':
-              object.placement = text;
-              break;
-            case 'supplierQuote':
-              object.supplierQuote = text;
-              break;
-            case 'supplierCode':
-              object.supplierCode = text;
-              break;
-            case 'size':
-              object.size = text;
-              break;
-            case 'qty':
-              const n = parseFloat(text.replace(/[^\d.]/g, ''));
-              object.qty = isNaN(n) ? null : n;
-              break;
-            default:
-              if (object.hasOwnProperty(col)) {
-                object[col] = text;
-              }
-          }
-        }
+        const result = this.mappingResult(cellMap, currentType);
 
         // type 매개변수에 따라 필터링
-        if (object.product && object.supplierQuote) {
-          results.push(object);
-          lastItem = object;
+        if (result.product && result.supplierQuote) {
+          results.push(result);
+          lastItem = result;
         }
       }
     });
@@ -266,5 +178,112 @@ export class AppService {
       const num = Number(numString);
       return Number.isInteger(num) && !Number.isNaN(num);
     });
+  }
+
+  private mappingHeaderMap(headerItems: PDFExtractText[]) {
+    const headerMap: Map<number, string> = new Map();
+
+    headerItems
+      .sort((a, b) => a.x - b.x)
+      .forEach((c) => {
+        let groupByX = [...headerMap.keys()].find(
+          (x0) => Math.abs(x0 - c.x) < 15,
+        );
+
+        if (!groupByX) groupByX = c.x;
+
+        headerMap.set(groupByX, (headerMap.get(groupByX) ?? '') + ' ' + c.str);
+      });
+
+    return headerMap;
+  }
+
+  private mappingRows(table: PDFExtractText[]) {
+    const rows: Row[] = [];
+
+    for (const cell of table) {
+      let places = false;
+
+      for (const row of rows) {
+        if (Math.abs(cell.y - row.yAvg) < 20) {
+          row.cells.push(cell);
+          row.yAvg =
+            (row.yAvg * (row.cells.length - 1) + cell.y) / row.cells.length;
+          places = true;
+          break;
+        }
+      }
+
+      if (!places) rows.push({ cells: [cell], yAvg: cell.y });
+    }
+
+    return rows;
+  }
+
+  private mappingResult(
+    cellMap: Map<string, string[]>,
+    currentType: PdfParsingType,
+  ) {
+    const object: PdfParseBomInterface = {
+      type: currentType,
+      product: '',
+      composition: '',
+      placement: '',
+      supplierQuote: '',
+      supplierCode: null,
+
+      // 컬러
+      mossMos: null,
+      blackBlk: null,
+      navyNvy: null,
+      mauveMau: null,
+      royalBlueRbu: null,
+      livingCoralPk101: null,
+      chalkPinkBlh: null,
+      tealTel: null,
+      lochmaraPr067: null,
+      spindleBl187: null,
+      bittersweetRd012: null,
+      warmBrownBr132: null,
+      caribbeanBlueCrb: null,
+      ginFizzPk075: null,
+      tempranilloRd089: null,
+      graphiteGpt: null,
+    };
+
+    for (const [col, arr] of cellMap.entries()) {
+      const text = arr.join(' ');
+
+      switch (col) {
+        case 'product':
+          object.product = text;
+          break;
+        case 'composition':
+          object.composition = text;
+          break;
+        case 'placement':
+          object.placement = text;
+          break;
+        case 'supplierQuote':
+          object.supplierQuote = text;
+          break;
+        case 'supplierCode':
+          object.supplierCode = text;
+          break;
+        case 'size':
+          object.size = text;
+          break;
+        case 'qty':
+          const n = parseFloat(text.replace(/[^\d.]/g, ''));
+          object.qty = isNaN(n) ? null : n;
+          break;
+        default:
+          if (object.hasOwnProperty(col)) {
+            object[col] = text;
+          }
+      }
+    }
+
+    return object;
   }
 }
