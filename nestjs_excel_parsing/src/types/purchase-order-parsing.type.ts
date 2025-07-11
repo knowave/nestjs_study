@@ -1,0 +1,20 @@
+export type PurchaseOrderParsingType = {
+  purchaseOrderNo?: string;
+  styleNo?: string;
+  styleDescription?: string;
+  year?: string;
+  season?: string;
+  destination?: string;
+  wareHouse?: string;
+  gender?: string;
+  colorCode?: string;
+  colorName?: string;
+  size?: string;
+  quantity?: number;
+  termOfPrice?: string;
+  unitPrice?: number;
+  etd?: Date;
+  exFactory?: Date;
+  shipMode?: string;
+  inDc?: Date;
+};
