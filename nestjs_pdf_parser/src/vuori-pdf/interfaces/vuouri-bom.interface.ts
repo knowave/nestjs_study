@@ -1,0 +1,15 @@
+import { PdfParsingType } from 'src/common/types/pdf-parsing.type';
+
+export interface VuoriBomInterface {
+  type: PdfParsingType;
+  class: string;
+  description: string;
+  brandItemNo: string;
+  placement: string;
+  supplierNo: string;
+  supplier: string;
+  unit: string;
+  weight?: string | null;
+  content?: string | null;
+  fabricColorName?: string | null;
+}
