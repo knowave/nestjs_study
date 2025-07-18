@@ -1,27 +1,26 @@
-// src/app.service.ts
 import { Injectable } from '@nestjs/common';
 import { PDFExtract, PDFExtractText } from 'pdf.js-extract';
-import { PdfParseBomInterface } from './interfaces/pdf-parse-bom.interface';
-import { PdfParsingType } from './types/pdf-parsing.type';
-import { Row } from './interfaces/row.interface';
+import { FigsBomInterface } from './interfaces/figs-bom.interface';
+import { PdfParsingType } from '../common/types/pdf-parsing.type';
+import { Row } from '../common/interfaces/row.interface';
 
 @Injectable()
-export class AppService {
+export class FigsPdfService {
   private readonly pdfExtract: PDFExtract;
 
   constructor() {
     this.pdfExtract = new PDFExtract();
   }
 
-  async pdfParse({ buffer }: { buffer: Buffer }) {
-    const results: PdfParseBomInterface[] = [];
+  async parse({ buffer }: { buffer: Buffer }) {
+    const results: FigsBomInterface[] = [];
 
     const data = await this.pdfExtract.extractBuffer(buffer, {});
     const pages = data.pages.slice(8); // 9페이지 부터 시작.
 
     pages.forEach((page) => {
       let currentType: PdfParsingType = 'accessory';
-      let lastItem: PdfParseBomInterface | null = null;
+      let lastItem: FigsBomInterface | null = null;
 
       const raw = page.content.map((c) => ({ ...c, str: c.str.trim() })); // 빈 문자열 제거.
       const content = raw.filter((c) => {
@@ -224,7 +223,7 @@ export class AppService {
     cellMap: Map<string, string[]>,
     currentType: PdfParsingType,
   ) {
-    const object: PdfParseBomInterface = {
+    const object: FigsBomInterface = {
       type: currentType,
       product: '',
       composition: '',

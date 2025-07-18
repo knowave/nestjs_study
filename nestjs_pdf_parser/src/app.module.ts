@@ -1,10 +1,8 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { VuoriPdfModule } from './vuori-pdf/vuori-pdf.module';
+import { FigsPdfModule } from './figs-pdf/figs-pdf.module';
 
 @Module({
-  imports: [],
-  controllers: [AppController],
-  providers: [AppService],
+  imports: [VuoriPdfModule, FigsPdfModule],
 })
 export class AppModule {}
