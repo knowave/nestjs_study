@@ -8,6 +8,7 @@ import { Row } from 'src/common/interfaces/row.interface';
 @Injectable()
 export class VuoriPdfService {
   private readonly pdfExtract: PDFExtract;
+
   private readonly types = [
     'fabric',
     'interfacing',
@@ -15,6 +16,17 @@ export class VuoriPdfService {
     'labels',
     'packaging',
     'thread',
+  ];
+
+  private readonly requiredFields: (keyof VuoriBomRequiredField)[] = [
+    'product',
+    'placement',
+    'detailedComposition',
+    'supplier',
+    'supplierRefNo',
+    'uom',
+    'weight',
+    'color',
   ];
 
   constructor() {
@@ -26,80 +38,69 @@ export class VuoriPdfService {
     const data = await this.pdfExtract.extractBuffer(buffer, {});
     const pages = data.pages;
 
-    pages.forEach((page) => {
-      let currentType: PdfParsingType = 'accessory';
-      let lastItem: VuoriBomInterface | undefined;
+    for (const page of pages) {
+      const lines = page.content
+        .map((c) => ({ ...c, str: c.str.trim() }))
+        .filter(
+          (c) =>
+            c.str &&
+            !/^Displaying\s+\d+/.test(c.str) &&
+            !/^Page\s+\d+\s+of\s+\d+/.test(c.str),
+        );
 
-      const raw = page.content.map((c) => ({ ...c, str: c.str.trim() }));
-      const content = raw.filter((c) => {
-        if (!c.str) return false;
+      const typeMakers: { y: number; type: PdfParsingType; raw: string }[] =
+        lines
+          .filter((c) => this.isTypeMaker(c.str.toLowerCase()))
+          .map((c) => ({
+            y: c.y,
+            type: c.str.toLowerCase().startsWith('fabric')
+              ? 'fabric'
+              : 'accessory',
+            raw: c.str.toLowerCase(),
+          }));
 
-        if (/^Displaying\s+\d+\s*-\s*\d+\s+of\s+\d+/i.test(c.str)) return false;
-
-        if (this.isTypeMaker(c.str)) return true;
-
-        return true;
-      });
-
-      const typeMaker = content.find((c) => this.isTypeMaker(c.str));
-
-      if (typeMaker) {
-        const maker = typeMaker.str.trim();
-        const index = maker.indexOf('(');
-        const kind =
-          index > 0
-            ? maker.substring(0, index).trim().toLowerCase()
-            : maker.toLowerCase();
-
-        currentType = kind === 'fabric' ? 'fabric' : 'accessory';
-        content.splice(content.indexOf(typeMaker), 1);
-      }
-
-      const filteredContent = content.filter((c) => {
-        if (c === typeMaker) return false;
-
-        return true;
-      });
-
-      const productYCondition = filteredContent.find(
+      const productHeader = lines.find(
         (c) => c.str.toLowerCase() === 'product',
-      )?.y;
-
-      if (!productYCondition) return;
-
-      const headerItems: PDFExtractText[] = filteredContent.filter(
-        (c) => Math.abs(c.y - productYCondition) < 20,
       );
 
-      const headerMap = this.mappingHeaderMap(headerItems);
+      if (!productHeader) continue;
+
+      const headerY = productHeader.y;
+
+      const headerItems = lines
+        .filter((c) => Math.abs(c.y - headerY) < 20)
+        .sort((a, b) => a.x - b.x);
+
+      //   const headerMap = this.mappingHeaderMap(headerItems);
+      const headerMap = new Map<number, string>();
+
+      for (const c of headerItems) {
+        const keyX =
+          [...headerMap.keys()].find((x0) => Math.abs(x0 - c.x) < 15) ?? c.x;
+        const prev = headerMap.get(keyX) ?? '';
+
+        headerMap.set(keyX, (prev + ' ' + c.str).trim());
+      }
 
       const fieldKeyMap = new Map<number, string>();
-      const requiredFields: (keyof VuoriBomRequiredField)[] = [
-        'product',
-        'placement',
-        'detailedComposition',
-        'supplier',
-        'supplierRefNo',
-        'uom',
-        'weight',
-        'color',
-      ];
 
-      for (const [x, label] of headerMap) {
+      headerMap.forEach((label, x) => {
         let value = this.toCamelCase(label);
 
         if (value === 'supplierRef#') {
           value = 'supplierRefNo';
         }
 
-        if (requiredFields.includes(value as keyof VuoriBomRequiredField)) {
+        if (
+          this.requiredFields.includes(value as keyof VuoriBomRequiredField)
+        ) {
           if (value === 'color') {
             const existingX = [...fieldKeyMap.entries()].find(
               ([_, v]) => v === 'color',
             )?.[0];
 
             if (typeof existingX === 'number' && existingX < x) {
-              continue;
+              return;
             } else {
               fieldKeyMap.set(x, value);
             }
@@ -107,62 +108,47 @@ export class VuoriPdfService {
 
           fieldKeyMap.set(x, value);
         }
-      }
+      });
 
       const present = Array.from(fieldKeyMap.values());
-      if (!requiredFields.every((k) => present.includes(k))) return;
+      if (!this.requiredFields.every((k) => present.includes(k))) continue;
 
-      const xList = [...fieldKeyMap.keys()];
-      const minX = Math.min(...xList) - 15;
-      const maxX = Math.max(...xList) + 15;
-
-      const table = filteredContent.filter(
-        (c) => c.y > productYCondition && c.x > minX && c.x <= maxX,
+      const xs = Array.from(fieldKeyMap.keys());
+      const minX = Math.min(...xs) - 15;
+      const maxX = Math.max(...xs) + 15;
+      const tableContent = lines.filter(
+        (c) => c.y > headerY && c.x > minX && c.x <= maxX,
       );
 
-      const rows = this.mappingRows(table);
+      const rows = this.mappingRows(tableContent);
+
+      let lastIndex: number | null = null;
 
       for (const row of rows) {
-        const cellMap = new Map<string, string[]>();
+        const cellMap = this.mapCells(row.cells, fieldKeyMap);
+        const productArray = cellMap.get('product');
+        const productValue = productArray?.join(' ').trim() ?? '';
 
-        for (const item of row.cells) {
-          let bestX: number | null = null;
-          let bestDiff = Infinity;
+        const isProductCodePattern = this.isProductCodePattern(productValue);
 
-          for (const x of xList) {
-            const diff = Math.abs(item.x - x);
-            const column = fieldKeyMap.get(x);
-
-            const tol = column === 'product' ? 60 : 15;
-
-            if (diff < tol && diff < bestDiff) {
-              bestDiff = diff;
-              bestX = x;
+        if (!isProductCodePattern && lastIndex !== null) {
+          for (const v of fieldKeyMap.values()) {
+            if (cellMap.has(v)) {
+              const txt = cellMap.get(v)!.join(' ').trim();
+              results[lastIndex][v] += ' ' + txt;
             }
           }
 
-          if (!bestX) continue;
-
-          const column = fieldKeyMap.get(bestX);
-          const arr = cellMap.get(column ?? '') ?? [];
-
-          arr.push(item.str);
-          cellMap.set(column ?? '', arr);
-        }
-
-        if (!cellMap.has('product') && cellMap.has('placement') && lastItem) {
-          lastItem.placement += ' ' + (cellMap.get('placement') ?? []).join('');
           continue;
         }
 
-        const result = this.mappingResult(cellMap, currentType);
+        const { type: rowType, raw } = this.getRowType(typeMakers, row.yAvg);
+        const result = this.mappingResult(cellMap, rowType);
 
-        if (result.description) {
-          results.push(result);
-          lastItem = result;
-        }
+        results.push(result);
+        lastIndex = results.length - 1;
       }
-    });
+    }
 
     return results;
   }
@@ -233,6 +219,64 @@ export class VuoriPdfService {
     }
 
     return rows;
+  }
+
+  private mapCells(
+    cells: PDFExtractText[],
+    fieldKeyMap: Map<number, string>,
+  ): Map<string, string[]> {
+    const map = new Map<string, string[]>();
+    const xs = Array.from(fieldKeyMap.keys());
+
+    if (
+      cells.length === 1 &&
+      this.types.some((type) => cells[0].str.toLowerCase().startsWith(type))
+    ) {
+      return map;
+    }
+
+    cells.forEach((cell) => {
+      let bestX: number | null = null;
+      let bestDiff = Infinity;
+
+      xs.forEach((x) => {
+        const diff = Math.abs(cell.x - x);
+
+        const key = fieldKeyMap.get(x)!;
+        const tol = key === 'product' ? 300 : 60;
+
+        if (diff < tol && diff < bestDiff) {
+          bestDiff = diff;
+          bestX = x;
+        }
+      });
+
+      if (bestX !== null) {
+        const key = fieldKeyMap.get(bestX)!;
+        const arr = map.get(key) ?? [];
+
+        arr.push(cell.str);
+        map.set(key, arr);
+      }
+    });
+
+    return map;
+  }
+
+  private isProductCodePattern(text: string): boolean {
+    return /-\s*[A-Z]+[0-9]{4,}$/.test(text);
+  }
+
+  private getRowType(
+    typeMakers: { y: number; type: PdfParsingType; raw: string }[],
+    yAvg: number,
+  ): { type: PdfParsingType; raw: string | null } {
+    return (
+      typeMakers.filter((m) => m.y <= yAvg).sort((a, b) => b.y - a.y)[0] || {
+        type: 'accessory',
+        raw: null,
+      }
+    );
   }
 
   private mappingResult(
