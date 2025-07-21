@@ -1,288 +1,321 @@
 import { Injectable } from '@nestjs/common';
 import { PDFExtract, PDFExtractText } from 'pdf.js-extract';
 import { FigsBomInterface } from './interfaces/figs-bom.interface';
-import { PdfParsingType } from '../common/types/pdf-parsing.type';
-import { Row } from '../common/interfaces/row.interface';
+import { PdfParsingType } from 'src/common/types/pdf-parsing.type';
+import { Row } from 'src/common/interfaces/row.interface';
 
 @Injectable()
 export class FigsPdfService {
-  private readonly pdfExtract: PDFExtract;
+  private pdfExtract = new PDFExtract();
+  private readonly types: string[] = [
+    'fabric',
+    'trim',
+    'labels',
+    'artwork',
+    'thread/fusing',
+    'packaging',
+    'heat transfers',
+  ];
+  private readonly requiredColumns: string[] = [
+    'product',
+    'composition',
+    'qty',
+    'placement',
+    'supplierQuote',
+    'blackBlk',
+    'navyNvy',
+    'warmBrownBr132',
+  ];
 
-  constructor() {
-    this.pdfExtract = new PDFExtract();
-  }
-
-  async parse({ buffer }: { buffer: Buffer }) {
+  async parse(buffer: Buffer): Promise<FigsBomInterface[]> {
     const results: FigsBomInterface[] = [];
-
     const data = await this.pdfExtract.extractBuffer(buffer, {});
-    const pages = data.pages.slice(8); // 9페이지 부터 시작.
+    const pages = data.pages.slice(8); // 9페이지부터 시작
 
-    pages.forEach((page) => {
-      let currentType: PdfParsingType = 'accessory';
-      let lastItem: FigsBomInterface | null = null;
+    for (const page of pages) {
+      // 문자열 정규화 및 페이지 정보 text 제거
+      const lines = page.content
+        .map((c) => ({ ...c, str: c.str.trim() }))
+        .filter(
+          (c) =>
+            c.str &&
+            !/^Displaying\s+\d+/.test(c.str) &&
+            !/^Page\s+\d+\s+of\s+\d+/.test(c.str),
+        );
 
-      const raw = page.content.map((c) => ({ ...c, str: c.str.trim() })); // 빈 문자열 제거.
-      const content = raw.filter((c) => {
-        if (!c.str) return false; // 빈 문자열 완전 제거.
+      // 이 페이지의 모든 type marker 정보 수집
+      const markers: { y: number; type: PdfParsingType; raw: string }[] = lines
+        .filter((c) => this.isTypeMaker(c.str.toLowerCase()))
+        .map((c) => ({
+          y: c.y,
+          type: c.str.toLowerCase().startsWith('fabric')
+            ? 'fabric'
+            : 'accessory',
+          raw: c.str.toLowerCase(),
+        }));
 
-        if (/^Displaying\s+\d+\s*-\s*\d+\s+of\s+\d+/i.test(c.str)) return false; // Displaying과 같은 텍스트 제거.
-
-        if (this.isTypeMaker(c.str)) return true; // type maker는 무조건 포함. (fabric, trim, labels, artwork)
-
-        return true;
-      });
-
-      const typeMaker = content.find((c) => this.isTypeMaker(c.str));
-
-      if (typeMaker) {
-        const maker = typeMaker.str.trim();
-        const index = maker.indexOf('(');
-        const kind =
-          index > 0
-            ? maker.substring(0, index).trim().toLowerCase()
-            : maker.toLowerCase();
-
-        // outsourcing은 추후에 진행할 예정.
-        currentType = kind === 'fabric' ? 'fabric' : 'accessory';
-
-        content.splice(content.indexOf(typeMaker), 1); // type maker 제거.
-      }
-
-      // typeMaker 라인은 어떠한 필드에도 값이 포함되지 않도록 제거.
-      const filtered = content.filter((c) => {
-        if (c === typeMaker) return false;
-
-        if (c.str.trim().toLowerCase().startsWith('thread/fusing'))
-          return false;
-
-        return true;
-      });
-
-      // header product Y 좌표 찾기
-      const productYCondition = filtered.find(
+      // header Y좌표 찾기
+      const productHeader = lines.find(
         (c) => c.str.toLowerCase() === 'product',
-      )?.y;
-      if (!productYCondition) return;
-
-      // 같은 Y 좌표에 존재하는 text들로 header grouping.
-      const headerItems: PDFExtractText[] = filtered.filter(
-        (c) => Math.abs(c.y - productYCondition) < 20,
       );
-      const headerMap = this.mappingHeaderMap(headerItems);
+      if (!productHeader) continue;
 
-      // header를 field key 매핑
+      const headerY = productHeader.y;
+
+      // 헤더 아이템 그룹핑 및 fieldKeyMap 생성
+      const headerItems = lines
+        .filter((c) => Math.abs(c.y - headerY) < 20)
+        .sort((a, b) => a.x - b.x);
+      const headerMap = new Map<number, string>();
+
+      headerItems.forEach((c) => {
+        const keyX =
+          [...headerMap.keys()].find((x0) => Math.abs(x0 - c.x) < 15) ?? c.x;
+        const prev = headerMap.get(keyX) ?? '';
+
+        headerMap.set(keyX, (prev + ' ' + c.str).trim());
+      });
+
+      // 필수 컬럼만 추출
+      const requiredCols = new Set(this.requiredColumns);
       const fieldKeyMap = new Map<number, string>();
 
-      for (const [x, label] of headerMap) {
+      headerMap.forEach((label, x) => {
         const key = this.toCamelCase(label);
-        fieldKeyMap.set(x, key);
-      }
 
-      // 필수 header 존재 여부 체크
-      const required = [
-        'product',
-        'composition',
-        'qty',
-        'placement',
-        'supplierQuote',
-      ];
+        if (requiredCols.has(key)) {
+          fieldKeyMap.set(x, key);
+        }
+      });
 
-      const present = Array.from(fieldKeyMap.values());
+      // 필수 헤더 체크
+      const required = this.requiredColumns;
+      if (!required.every((k) => Array.from(fieldKeyMap.values()).includes(k)))
+        continue;
 
-      if (!required.every((k) => present.includes(k))) return;
-
-      // 테이블 영역 X 범위 결정
-      const xList = [...fieldKeyMap.keys()];
-      const minX = Math.min(...xList) - 15;
-      const maxX = Math.max(...xList) + 15;
-
-      const table = filtered.filter(
-        (c) => c.y > productYCondition && c.x > minX && c.x <= maxX,
+      // 테이블 영역 필터링 및 row 생성
+      const xs = Array.from(fieldKeyMap.keys());
+      const minX = Math.min(...xs) - 15;
+      const maxX = Math.max(...xs) + 15;
+      const tableContent = lines.filter(
+        (c) => c.y > headerY && c.x > minX && c.x <= maxX,
       );
-      const rows = this.mappingRows(table);
+      const rows = this.mappingRows(tableContent);
 
-      // 각 행별로 행과 컬럼 매핑
+      // 각 row 처리
+      let lastIndex: number | null = null;
+      let lastAccClassification: string | null = null;
+
       for (const row of rows) {
-        const cellMap = new Map<string, string[]>();
+        const cellMap = this.mapCells(row.cells, fieldKeyMap);
+        const productArray = cellMap.get('product');
+        const productText = productArray?.join(' ').trim() ?? '';
 
-        for (const item of row.cells) {
-          let bestX: number | null = null;
-          let bestDiff = Infinity;
+        const isProductCodePattern = this.isProductCodePattern(productText);
 
-          for (const x of xList) {
-            const diff = Math.abs(item.x - x);
-            const col = fieldKeyMap.get(x);
-
-            // placement는 줄바꿈이 다른 컬럼보다 많아서 유효 범위를 넓게 처리.
-            const tol = col === 'placement' ? 60 : 15;
-
-            if (diff < tol && diff < bestDiff) {
-              bestDiff = diff;
-              bestX = x;
+        if (!isProductCodePattern && lastIndex !== null) {
+          for (const key of fieldKeyMap.values()) {
+            if (cellMap.has(key)) {
+              const text = cellMap.get(key)!.join(' ').trim();
+              results[lastIndex][key] += ' ' + text;
             }
           }
 
-          if (!bestX) continue;
-
-          const col = fieldKeyMap.get(bestX);
-          const arr = cellMap.get(col ?? '') ?? [];
-
-          arr.push(item.str);
-          cellMap.set(col ?? '', arr);
-        }
-
-        if (!cellMap.has('product') && cellMap.has('placement') && lastItem) {
-          lastItem.placement +=
-            ' ' + (cellMap.get('placement') ?? []).join(' ');
           continue;
         }
 
-        const result = this.mappingResult(cellMap, currentType);
+        const { type: rowType, raw } = this.getRowType(markers, row.yAvg);
+        const result = this.mappingResult(cellMap, rowType);
 
-        // type 매개변수에 따라 필터링
+        if (rowType === 'accessory') {
+          const beforeParen = raw?.split('(')[0].trim();
+          const accClassification = beforeParen?.includes('/')
+            ? beforeParen.split('/')[0].trim()
+            : beforeParen;
+
+          result.accClassification = accClassification ?? lastAccClassification;
+          if (accClassification) lastAccClassification = accClassification;
+        }
+
         if (result.product && result.supplierQuote) {
           results.push(result);
-          lastItem = result;
+          lastIndex = results.length - 1;
         }
       }
-    });
+    }
 
     return results;
   }
 
-  private toCamelCase(header: string) {
+  private toCamelCase(header: string): string {
     return header
-      .trim()
       .split(' ')
-      .map((w, i) => {
-        return i === 0
+      .map((w, i) =>
+        i === 0
           ? w.toLowerCase()
-          : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
-      })
+          : w[0].toUpperCase() + w.slice(1).toLowerCase(),
+      )
       .join('');
   }
 
-  private isTypeMaker(str: string) {
-    const s = str.trim().toLowerCase();
-    const typeMakers = ['fabric', 'trim', 'labels', 'artwork'];
-
-    return typeMakers.some((maker) => {
-      if (!s.startsWith(maker)) return false;
-
-      const rest = s.slice(maker.length).trim();
-      if (!rest.startsWith('(') || !rest.endsWith(')')) return false;
-
-      const numString = rest.substring(1, rest.length - 1).trim();
-      const num = Number(numString);
-      return Number.isInteger(num) && !Number.isNaN(num);
+  private isTypeMaker(str: string): boolean {
+    return this.types.some((m) => {
+      if (!str.startsWith(m)) return false;
+      const rest = str.slice(m.length).trim();
+      return rest.startsWith('(') && rest.endsWith(')');
     });
   }
 
-  private mappingHeaderMap(headerItems: PDFExtractText[]) {
-    const headerMap: Map<number, string> = new Map();
-
-    headerItems
-      .sort((a, b) => a.x - b.x)
-      .forEach((c) => {
-        let groupByX = [...headerMap.keys()].find(
-          (x0) => Math.abs(x0 - c.x) < 15,
-        );
-
-        if (!groupByX) groupByX = c.x;
-
-        headerMap.set(groupByX, (headerMap.get(groupByX) ?? '') + ' ' + c.str);
-      });
-
-    return headerMap;
-  }
-
-  private mappingRows(table: PDFExtractText[]) {
+  private mappingRows(table: PDFExtractText[]): Row[] {
     const rows: Row[] = [];
 
     for (const cell of table) {
-      let places = false;
-
+      let placed = false;
       for (const row of rows) {
-        if (Math.abs(cell.y - row.yAvg) < 20) {
+        if (Math.abs(cell.y - row.yAvg) < 15) {
           row.cells.push(cell);
           row.yAvg =
             (row.yAvg * (row.cells.length - 1) + cell.y) / row.cells.length;
-          places = true;
+          placed = true;
           break;
         }
       }
 
-      if (!places) rows.push({ cells: [cell], yAvg: cell.y });
+      if (!placed) rows.push({ cells: [cell], yAvg: cell.y });
+    }
+    return rows;
+  }
+
+  private mapCells(
+    cells: PDFExtractText[],
+    fieldKeyMap: Map<number, string>,
+  ): Map<string, string[]> {
+    const map = new Map<string, string[]>();
+    const xs = Array.from(fieldKeyMap.keys());
+
+    if (
+      cells.length === 1 &&
+      this.types.some((t) => cells[0].str.trim().toLowerCase().startsWith(t))
+    ) {
+      return map;
     }
 
-    return rows;
+    for (const cell of cells) {
+      let bestX: number | null = null;
+      let bestDiff = Infinity;
+
+      for (const x of xs) {
+        const diff = Math.abs(cell.x - x);
+
+        const key = fieldKeyMap.get(x)!;
+        const tol = key === 'placement' ? 30 : 15;
+
+        if (diff < tol && diff < bestDiff) {
+          bestDiff = diff;
+          bestX = x;
+        }
+      }
+      if (bestX !== null) {
+        const key = fieldKeyMap.get(bestX)!;
+        const arr = map.get(key) ?? [];
+        arr.push(cell.str);
+        map.set(key, arr);
+      }
+    }
+    return map;
+  }
+
+  private getRowType(
+    markers: { y: number; type: PdfParsingType; raw: string }[],
+    yAvg: number,
+  ): { type: PdfParsingType; raw: string | null } {
+    return (
+      markers.filter((m) => m.y <= yAvg).sort((a, b) => b.y - a.y)[0] || {
+        type: 'accessory',
+        raw: null,
+      }
+    );
   }
 
   private mappingResult(
     cellMap: Map<string, string[]>,
     currentType: PdfParsingType,
-  ) {
-    const object: FigsBomInterface = {
+  ): FigsBomInterface {
+    const obj: FigsBomInterface = {
       type: currentType,
       product: '',
+      accClassification: '', // typeMaker인 'thread', 'trim', 'packaging' 과 같은 값들을 추가.
       composition: '',
       placement: '',
       supplierQuote: '',
       supplierCode: null,
 
-      // 컬러
-      mossMos: null,
-      blackBlk: null,
-      navyNvy: null,
-      mauveMau: null,
-      royalBlueRbu: null,
-      livingCoralPk101: null,
-      chalkPinkBlh: null,
-      tealTel: null,
-      lochmaraPr067: null,
-      spindleBl187: null,
-      bittersweetRd012: null,
-      warmBrownBr132: null,
-      caribbeanBlueCrb: null,
-      ginFizzPk075: null,
-      tempranilloRd089: null,
-      graphiteGpt: null,
-    };
+      // color
+      blackBlk: '',
+      navyNvy: '',
+      warmBrownBr132: '',
+    } as FigsBomInterface;
 
     for (const [col, arr] of cellMap.entries()) {
       const text = arr.join(' ');
-
       switch (col) {
         case 'product':
-          object.product = text;
+          obj.product = text;
           break;
+
         case 'composition':
-          object.composition = text;
+          obj.composition = text;
           break;
+
         case 'placement':
-          object.placement = text;
+          obj.placement = text;
           break;
+
         case 'supplierQuote':
-          object.supplierQuote = text;
+          obj.supplierQuote = text;
           break;
+
         case 'supplierCode':
-          object.supplierCode = text;
+          obj.supplierCode = text;
           break;
-        case 'size':
-          object.size = text;
-          break;
+
         case 'qty':
           const n = parseFloat(text.replace(/[^\d.]/g, ''));
-          object.qty = isNaN(n) ? null : n;
+          obj.qty = isNaN(n) ? 0 : n;
           break;
+
         default:
-          if (object.hasOwnProperty(col)) {
-            object[col] = text;
-          }
+          if (col in obj) (obj as any)[col] = text;
       }
     }
+    return obj;
+  }
 
-    return object;
+  private isProductCodePattern(text: string): boolean {
+    const str = text.trim();
+    // 최소 길이 체크
+    if (str.length < 10) return false;
+
+    // 0~2: prefix / 3: '-' / 4~9: digits
+    if (str[3] !== '-') return false;
+
+    // prefix 영문 확인 (A–Z, a–z)
+    for (let i = 0; i < 3; ++i) {
+      const code = str.charCodeAt(i);
+      const isAlpha = (code >= 65 && code <= 90) || (code >= 97 && code <= 122);
+      if (!isAlpha) return false;
+    }
+
+    // 뒤 6글자 숫자 확인
+    for (let i = 4; i < 10; ++i) {
+      const c = str[i];
+      if (c < '0' || c > '9') return false;
+    }
+
+    // 숫자 뒤에 나오는 문자는 공백이거나 아예 없으면 OK
+    const next = str[10];
+    if (next && next !== ' ') return false;
+
+    return true;
   }
 }

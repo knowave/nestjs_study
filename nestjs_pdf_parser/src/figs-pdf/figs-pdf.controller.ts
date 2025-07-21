@@ -14,6 +14,6 @@ export class FigsPdfController {
   @UseInterceptors(FileInterceptor('file'))
   @Post('/parse')
   async parse(@UploadedFile() file: Express.Multer.File) {
-    return this.figsPdfService.parse(file);
+    return this.figsPdfService.parse(file.buffer);
   }
 }

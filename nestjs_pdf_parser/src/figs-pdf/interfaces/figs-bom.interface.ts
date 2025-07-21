@@ -1,26 +1,16 @@
+import { PdfParsingType } from 'src/common/types/pdf-parsing.type';
+
 export interface FigsBomInterface {
-  type: 'fabric' | 'accessory';
-  product?: string | null;
-  composition?: string | null;
-  size?: string | null;
+  type: PdfParsingType;
+  product: string;
+  accClassification?: string | null;
+  composition: string;
+  size?: string;
   qty?: number | null;
-  placement?: string | null;
-  supplierQuote?: string | null;
+  placement: string;
+  supplierQuote: string;
   supplierCode?: string | null;
-  mossMos?: string | null;
-  blackBlk?: string | null;
-  navyNvy?: string | null;
-  mauveMau?: string | null;
-  royalBlueRbu?: string | null;
-  livingCoralPk101?: string | null;
-  chalkPinkBlh?: string | null;
-  tealTel?: string | null;
-  lochmaraPr067?: string | null;
-  spindleBl187?: string | null;
-  bittersweetRd012?: string | null;
-  warmBrownBr132?: string | null;
-  caribbeanBlueCrb?: string | null;
-  ginFizzPk075?: string | null;
-  tempranilloRd089?: string | null;
-  graphiteGpt?: string | null;
+  blackBlk: string;
+  navyNvy: string;
+  warmBrownBr132: string;
 }
