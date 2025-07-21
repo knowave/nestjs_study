@@ -2,7 +2,7 @@ import { PdfParsingType } from 'src/common/types/pdf-parsing.type';
 
 export interface VuoriBomInterface {
   type: PdfParsingType;
-  class: string;
+  classification: string;
   description: string;
   brandItemNo: string;
   placement: string;

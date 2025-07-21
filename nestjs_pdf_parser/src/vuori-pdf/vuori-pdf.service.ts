@@ -114,8 +114,8 @@ export class VuoriPdfService {
       if (!this.requiredFields.every((k) => present.includes(k))) continue;
 
       const xs = Array.from(fieldKeyMap.keys());
-      const minX = Math.min(...xs) - 15;
-      const maxX = Math.max(...xs) + 15;
+      const minX = Math.min(...xs) - 20;
+      const maxX = Math.max(...xs) + 20;
       const tableContent = lines.filter(
         (c) => c.y > headerY && c.x > minX && c.x <= maxX,
       );
@@ -142,7 +142,9 @@ export class VuoriPdfService {
           continue;
         }
 
-        const { type: rowType, raw } = this.getRowType(typeMakers, row.yAvg);
+        if (!cellMap.has('product')) continue;
+
+        const { type: rowType } = this.getRowType(typeMakers, row.yAvg);
         const result = this.mappingResult(cellMap, rowType);
 
         results.push(result);
@@ -168,24 +170,6 @@ export class VuoriPdfService {
     });
   }
 
-  private mappingHeaderMap(headerItems: PDFExtractText[]) {
-    const headerMap: Map<number, string> = new Map();
-
-    headerItems
-      .sort((a, b) => a.x - b.x)
-      .forEach((c) => {
-        let groupByX = [...headerMap.keys()].find(
-          (x0) => Math.abs(x0 - c.x) < 15,
-        );
-
-        if (!groupByX) groupByX = c.x;
-
-        headerMap.set(groupByX, (headerMap.get(groupByX) ?? '') + ' ' + c.str);
-      });
-
-    return headerMap;
-  }
-
   private toCamelCase(header: string) {
     return header
       .trim()
@@ -205,7 +189,7 @@ export class VuoriPdfService {
       let places = false;
 
       for (const row of rows) {
-        if (Math.abs(cell.y - row.yAvg) < 20) {
+        if (Math.abs(cell.y - row.yAvg) < 30) {
           row.cells.push(cell);
           row.yAvg =
             (row.yAvg * (row.cells.length - 1) + cell.y) / row.cells.length;
@@ -243,7 +227,7 @@ export class VuoriPdfService {
         const diff = Math.abs(cell.x - x);
 
         const key = fieldKeyMap.get(x)!;
-        const tol = key === 'product' ? 300 : 60;
+        const tol = key === 'product' ? 20 : 10;
 
         if (diff < tol && diff < bestDiff) {
           bestDiff = diff;
@@ -270,11 +254,10 @@ export class VuoriPdfService {
   private getRowType(
     typeMakers: { y: number; type: PdfParsingType; raw: string }[],
     yAvg: number,
-  ): { type: PdfParsingType; raw: string | null } {
+  ): { type: PdfParsingType } {
     return (
       typeMakers.filter((m) => m.y <= yAvg).sort((a, b) => b.y - a.y)[0] || {
         type: 'accessory',
-        raw: null,
       }
     );
   }
@@ -283,9 +266,9 @@ export class VuoriPdfService {
     cellMap: Map<string, string[]>,
     currentType: PdfParsingType,
   ) {
-    const object: VuoriBomInterface = {
+    const result: VuoriBomInterface = {
       type: currentType,
-      class: '',
+      classification: '',
       description: '',
       brandItemNo: '',
       placement: '',
@@ -302,47 +285,48 @@ export class VuoriPdfService {
 
       switch (col) {
         case 'product':
-          const match = text.match(/\b[A-Z]\d{4,}\b/)!;
+          const match = text.match(/\b[A-Z]+\d{4,}\b/)!;
 
           const brandItemNo = match?.[0];
-          const description = brandItemNo
-            ? text.replace(brandItemNo, '').trim()
-            : text;
+          const description = text.replace(
+            new RegExp(`[-\\s]*${brandItemNo}`),
+            '',
+          );
 
-          object.description = description;
-          object.brandItemNo = brandItemNo;
+          result.description = description;
+          result.brandItemNo = brandItemNo;
           break;
 
         case 'placement':
-          object.placement = text;
+          result.placement = text;
           break;
 
         case 'detailedComposition':
-          object.content = text;
+          result.content = text;
           break;
 
         case 'supplier':
-          object.supplier = text;
+          result.supplier = text;
           break;
 
         case 'supplierRefNo':
-          object.supplierNo = text;
+          result.supplierNo = text;
           break;
 
         case 'uom':
-          object.unit = text;
+          result.unit = text;
           break;
 
         case 'weight':
-          object.weight = text;
+          result.weight = text;
           break;
 
         case 'color':
-          object.fabricColorName = text;
+          result.fabricColorName = text;
           break;
       }
     }
 
-    return object;
+    return result;
   }
 }
