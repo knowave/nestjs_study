@@ -146,10 +146,10 @@ export class AppService {
               const ddpPrice = row.getCell(ddpIndex + 1).value as number;
               const fobPrice = row.getCell(idx + 1).value as number;
 
-              if (ddpPrice != null && ddpPrice > 0) {
+              if (ddpPrice !== null && ddpPrice > 0) {
                 unitPrice = ddpPrice;
               } else if (
-                fobPrice != null &&
+                fobPrice !== null &&
                 fobPrice > 0 &&
                 (!ddpPrice || ddpPrice === 0)
               ) {
