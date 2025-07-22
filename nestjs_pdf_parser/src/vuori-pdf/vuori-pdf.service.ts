@@ -16,6 +16,8 @@ export class VuoriPdfService {
     'labels',
     'packaging',
     'thread',
+    'fusing',
+    'Pellon',
   ];
 
   private readonly requiredFields: (keyof VuoriBomRequiredField)[] = [
@@ -129,9 +131,23 @@ export class VuoriPdfService {
         const productArray = cellMap.get('product');
         const productValue = productArray?.join(' ').trim() ?? '';
 
+        // merge lines that only contain product text back into the previous result
+        if (
+          lastIndex !== null &&
+          cellMap.size === 1 &&
+          cellMap.has('product')
+        ) {
+          results[lastIndex].product += ' ' + productValue;
+          continue;
+        }
+
         const isProductCodePattern = this.isProductCodePattern(productValue);
 
-        if (!isProductCodePattern && lastIndex !== null) {
+        if (
+          !isProductCodePattern &&
+          lastIndex !== null &&
+          !this.isProductCodePattern(results[lastIndex].product)
+        ) {
           for (const v of fieldKeyMap.values()) {
             if (cellMap.has(v)) {
               const txt = cellMap.get(v)!.join(' ').trim();
@@ -184,12 +200,13 @@ export class VuoriPdfService {
 
   private mappingRows(table: PDFExtractText[]) {
     const rows: Row[] = [];
+    const ROW_TOL = 8;
 
     for (const cell of table) {
       let places = false;
 
       for (const row of rows) {
-        if (Math.abs(cell.y - row.yAvg) < 30) {
+        if (Math.abs(cell.y - row.yAvg) < ROW_TOL) {
           row.cells.push(cell);
           row.yAvg =
             (row.yAvg * (row.cells.length - 1) + cell.y) / row.cells.length;
@@ -212,10 +229,12 @@ export class VuoriPdfService {
     const map = new Map<string, string[]>();
     const xs = Array.from(fieldKeyMap.keys());
 
-    if (
-      cells.length === 1 &&
-      this.types.some((type) => cells[0].str.toLowerCase().startsWith(type))
-    ) {
+    const isTypeMarkerRow = cells.some((c) => {
+      const str = c.str.toLowerCase().trim();
+      return this.types.some((type) => str.startsWith(type));
+    });
+
+    if (isTypeMarkerRow) {
       return map;
     }
 
@@ -227,7 +246,7 @@ export class VuoriPdfService {
         const diff = Math.abs(cell.x - x);
 
         const key = fieldKeyMap.get(x)!;
-        const tol = key === 'product' ? 20 : 10;
+        const tol = key === 'product' ? 30 : 15;
 
         if (diff < tol && diff < bestDiff) {
           bestDiff = diff;
@@ -248,7 +267,7 @@ export class VuoriPdfService {
   }
 
   private isProductCodePattern(text: string): boolean {
-    return /-\s*[A-Z]+[0-9]{4,}$/.test(text);
+    return /-\s*[A-Z]+\d{4,}$/.test(text);
   }
 
   private getRowType(
@@ -268,16 +287,14 @@ export class VuoriPdfService {
   ) {
     const result: VuoriBomInterface = {
       type: currentType,
-      classification: '',
-      description: '',
-      brandItemNo: '',
+      product: '',
       placement: '',
-      supplierNo: '',
+      detailedComposition: '',
       supplier: '',
-      unit: '',
+      supplierRefNo: '',
+      uom: '',
       weight: '',
-      content: '',
-      fabricColorName: '',
+      color: '',
     };
 
     for (const [col, arr] of cellMap.entries()) {
@@ -285,16 +302,7 @@ export class VuoriPdfService {
 
       switch (col) {
         case 'product':
-          const match = text.match(/\b[A-Z]+\d{4,}\b/)!;
-
-          const brandItemNo = match?.[0];
-          const description = text.replace(
-            new RegExp(`[-\\s]*${brandItemNo}`),
-            '',
-          );
-
-          result.description = description;
-          result.brandItemNo = brandItemNo;
+          result.product = text;
           break;
 
         case 'placement':
@@ -302,7 +310,7 @@ export class VuoriPdfService {
           break;
 
         case 'detailedComposition':
-          result.content = text;
+          result.detailedComposition = text;
           break;
 
         case 'supplier':
@@ -310,11 +318,11 @@ export class VuoriPdfService {
           break;
 
         case 'supplierRefNo':
-          result.supplierNo = text;
+          result.supplierRefNo = text;
           break;
 
         case 'uom':
-          result.unit = text;
+          result.uom = text;
           break;
 
         case 'weight':
@@ -322,7 +330,7 @@ export class VuoriPdfService {
           break;
 
         case 'color':
-          result.fabricColorName = text;
+          result.color = text;
           break;
       }
     }
